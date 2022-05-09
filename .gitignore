@@ -7,3 +7,5 @@ data/
 knowledgestream.egg-info/
 output/
 data.zip
+.project
+.pydevproject
