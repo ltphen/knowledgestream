@@ -6,6 +6,7 @@ Relational Knowledge Linker (KL-REL) algorithm.
 import sys
 import os
 import argparse
+import socket
 import numpy as np
 import pandas as pd
 import warnings
@@ -336,8 +337,7 @@ def link_prediction(G, subs, preds, objs, selected_measure='katz'):
 	print ''
 	return scores, times
 
-
-def main(args=None):
+def parseArguments():
 	# parse arguments
 	parser = argparse.ArgumentParser(
 		description=__doc__, 
@@ -350,7 +350,11 @@ def main(args=None):
 			dest='dataset', help='Dataset to test on.')
 	parser.add_argument('-o', type=str, required=True,
 			dest='outdir', help='Path to the output directory.')
-	args = parser.parse_args()
+        return parser.parse_args()
+        
+
+def main(args=None):
+	args = parseArguments()
 
 	# logging
 	disable_logging(log.DEBUG)
