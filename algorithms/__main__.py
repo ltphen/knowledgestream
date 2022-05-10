@@ -368,35 +368,7 @@ def ensureValidPaths(args):
 	assert exists(datafile)
 	args.dataset = datafile
 
-def main(args=None):
-	args = parseArguments()
-
-	# logging
-	disable_logging(log.DEBUG)
-
-	if args.method not in (
-		'stream', 'relklinker', 'klinker', 'predpath', 'pra',
-		'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
-	):
-		raise Exception('Invalid method specified.')
-
-	# ensure input file and output directory is valid.
-        ensureValidPaths(args)
-	log.info('Launching {}..'.format(args.method))
-	log.info('Dataset: {}'.format(basename(args.dataset)))
-	log.info('Output dir: {}'.format(args.outdir))
-
-	# read data
-        subs, preds, objs, spo_df = readData(args.dataset)
-
-	# load knowledge graph
-	G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
-	assert np.all(G.csr.indices >= 0)
-
-	# relational similarity
-	relsim = np.load(RELSIMPATH)
-
-	# execute
+def execute(args, G, spo_df, relsim, subs, preds, objs):
 	base = splitext(basename(args.dataset))[0]
 	t1 = time()
 	if args.method == 'stream': # KNOWLEDGE STREAM (KS)
@@ -473,6 +445,40 @@ def main(args=None):
 		outcsv = join(args.outdir, 'out_{}_{}_{}.csv'.format(args.method, base, DATE))
 		spo_df.to_csv(outcsv, sep=',', header=True, index=False)
 		print '* Saved results: %s' % outcsv
+    
+
+
+
+def main(args=None):
+	args = parseArguments()
+
+	# logging
+	disable_logging(log.DEBUG)
+
+	if args.method not in (
+		'stream', 'relklinker', 'klinker', 'predpath', 'pra',
+		'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
+	):
+		raise Exception('Invalid method specified.')
+
+	# ensure input file and output directory is valid.
+        ensureValidPaths(args)
+	log.info('Launching {}..'.format(args.method))
+	log.info('Dataset: {}'.format(basename(args.dataset)))
+	log.info('Output dir: {}'.format(args.outdir))
+
+	# read data
+        subs, preds, objs, spo_df = readData(args.dataset)
+
+	# load knowledge graph
+	G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
+	assert np.all(G.csr.indices >= 0)
+
+	# relational similarity
+	relsim = np.load(RELSIMPATH)
+
+	# execute
+        execute(args, G, spo_df, relsim, subs, preds, objs)
 	print '\nDone!\n'
 
 if __name__ == '__main__':
