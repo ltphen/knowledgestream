@@ -351,7 +351,22 @@ def parseArguments():
 	parser.add_argument('-o', type=str, required=True,
 			dest='outdir', help='Path to the output directory.')
         return parser.parse_args()
-        
+
+def readData(dataset):
+	df = pd.read_table(dataset, sep=',', header=0)
+	log.info('Read data: {} {}'.format(df.shape, basename(dataset)))
+	spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
+	log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
+	df = spo_df[['sid', 'pid', 'oid']].values
+	return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
+
+def ensureValidPaths(args):
+	outdir = abspath(expanduser(args.outdir))
+	assert exists(outdir)
+	args.outdir = outdir
+	datafile = abspath(expanduser(args.dataset))
+	assert exists(datafile)
+	args.dataset = datafile
 
 def main(args=None):
 	args = parseArguments()
@@ -366,23 +381,13 @@ def main(args=None):
 		raise Exception('Invalid method specified.')
 
 	# ensure input file and output directory is valid.
-	outdir = abspath(expanduser(args.outdir))
-	assert exists(outdir)
-	args.outdir = outdir
-	datafile = abspath(expanduser(args.dataset))
-	assert exists(datafile)
-	args.dataset = datafile
+        ensureValidPaths(args)
 	log.info('Launching {}..'.format(args.method))
 	log.info('Dataset: {}'.format(basename(args.dataset)))
 	log.info('Output dir: {}'.format(args.outdir))
 
 	# read data
-	df = pd.read_table(args.dataset, sep=',', header=0)
-	log.info('Read data: {} {}'.format(df.shape, basename(args.dataset)))
-	spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
-	log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
-	df = spo_df[['sid', 'pid', 'oid']].values
-	subs, preds, objs  = df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int)
+        subs, preds, objs, spo_df = readData(args.dataset)
 
 	# load knowledge graph
 	G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
