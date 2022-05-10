@@ -445,9 +445,81 @@ def execute(args, G, spo_df, relsim, subs, preds, objs):
 		outcsv = join(args.outdir, 'out_{}_{}_{}.csv'.format(args.method, base, DATE))
 		spo_df.to_csv(outcsv, sep=',', header=True, index=False)
 		print '* Saved results: %s' % outcsv
-    
 
+def validateFact(args, G, spo_df, relsim, subs, preds, objs):
+	base = splitext(basename(args.dataset))[0]
+	t1 = time()
+	if args.method == 'stream': # KNOWLEDGE STREAM (KS)
+                # TODO: simplify
+		# compute min. cost flow
+		log.info('Computing KS for {} triples..'.format(spo_df.shape[0]))
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			outjson = join(args.outdir, 'out_kstream_{}_{}.json'.format(base, DATE))
+			outcsv = join(args.outdir, 'out_kstream_{}_{}.csv'.format(base, DATE))
+			mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
+			# save the results
+			spo_df['score'] = mincostflows
+			spo_df['time'] = times
+			spo_df = normalize(spo_df)
+			spo_df.to_csv(outcsv, sep=',', header=True, index=False)
+			log.info('* Saved results: %s' % outcsv)
+		log.info('Mincostflow computation complete. Time taken: {:.2f} secs.\n'.format(time() - t1))
+	elif args.method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
+		scores, paths, rpaths, times = compute_relklinker(G, relsim, subs, preds, objs)
+		spo_df['score'] = scores
+		spo_df['path'] = paths
+		spo_df['rpath'] = rpaths
+		spo_df['time'] = times
+		spo_df = normalize(spo_df)
+                return score
+	elif args.method == 'klinker':
+		scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
+		spo_df['score'] = scores
+		spo_df['path'] = paths
+		spo_df['rpath'] = rpaths
+		spo_df['time'] = times
+		spo_df = normalize(spo_df)
+                return score
+	elif args.method == 'predpath': # PREDPATH
+                # TODO: simplify
+		vec, model = predpath_train_model(G, spo_df) # train
+		print 'Time taken: {:.2f}s\n'.format(time() - t1)
+		# save model
+		predictor = { 'dictvectorizer': vec, 'model': model }
+		try:
+			outpkl = join(args.outdir, 'out_predpath_{}_{}.pkl'.format(base, DATE))
+			with open(outpkl, 'wb') as g:
+				pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
+			print 'Saved: {}'.format(outpkl)
+		except IOError, e:
+			raise e
+	elif args.method == 'pra': # PRA
+                # TODO: simplify
+		features, model = pra_train_model(G, spo_df)
+		print 'Time taken: {:.2f}s\n'.format(time() - t1)
+		# save model
+		predictor = { 'features': features, 'model': model }
+		try:
+			outpkl = join(args.outdir, 'out_pra_{}_{}.pkl'.format(base, DATE))
+			with open(outpkl, 'wb') as g:
+				pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
+			print 'Saved: {}'.format(outpkl)
+		except IOError, e:
+			raise e
+	elif args.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
+		scores, times = link_prediction(G, subs, preds, objs, selected_measure=args.method)
+		spo_df['score'] = scores
+		spo_df['time'] = times
+		spo_df = normalize(spo_df)
+                return scores
 
+def listen():
+        # TODO: make configurable
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("127.0.0.1", 4444))
+        s.listen(4)
+        return s
 
 def main(args=None):
 	args = parseArguments()
@@ -476,6 +548,15 @@ def main(args=None):
 
 	# relational similarity
 	relsim = np.load(RELSIMPATH)
+
+        # listen for connections
+        log.info('Waiting for connection')
+        s = listen()
+        while True:
+            client, conn = s.accept()
+            log.info('Accepted connection')
+            print client.recv(1024)
+
 
 	# execute
         execute(args, G, spo_df, relsim, subs, preds, objs)
