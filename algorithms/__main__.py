@@ -101,6 +101,13 @@ measure_map = {
 	}
 }
 
+# prefix dict
+prefix = dict()
+prefix['dbo'] = "http://dbpedia.org/ontology"
+prefix['dbp'] = "http://dbpedia.org/property"
+prefix['dbr'] = "http://dbpedia.org/resource"
+
+
 # ================= KNOWLEDGE STREAM ALGORITHM ============
 
 def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
@@ -448,7 +455,7 @@ def executeBatch(args, G, spo_df, relsim, subs, preds, objs):
 		spo_df.to_csv(outcsv, sep=',', header=True, index=False)
 		print '* Saved results: %s' % outcsv
 
-def execute(method, G, relsim, subs, preds, objs):
+def execute(method, G, relsim, subId, predId, objId):
     """
     Validate a single assertion.
     """
@@ -519,15 +526,47 @@ def parseAssertion(assertionString):
     """
     Returns a RDFGraph that contains the input assertion
     """
+    log.info('Parsin assertion: {}'.format(assertionString))
+
+    prefixString = ""
+    for short, iri in prefix.items():
+        prefixString += "@prefix {}: <{}> .\n".format(short, iri)
+
     g = RDFGraph()
-    g.parse(data=assertionString, format='ttl')
+    log.info('Assertion with prefix:\n{}'.format(prefixString + assertionString))
+    g.parse(data=prefixString + assertionString, format='ttl')
     return g
 
-def respondToAssertion(rdfAssertion, graph, relsim):
+def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
         log.info('Validating assertion {} {} {}'.format(s, p, o))
-    # TODO: validate assertion
-    return "42"
+        return execute(method, graph, relsim, getId(s), getId(p), getId(o))
+
+    return "ERROR: No assertion provided."
+
+def getId(element):
+    path = HOME + "kg/"
+    idFileNodes = open(path + "nodes.txt")
+    idFileRelations = open(path + "relations.txt")
+    for line in idFileNodes.readline():
+        if element in line:
+            return line
+
+    for line in idRelations.readline():
+        if element in line:
+            return line
+    return -1
+
+def serviceClient(method, client, graph, relsim):
+    while True:
+        try:
+            assertion = parseAssertion(client.recv(1024))
+        except Exception as ex:
+            log.info('Exception while parsing: {}'.format(ex))
+            client.send("PARSING ERROR\n")
+            continue
+        client.send(respondToAssertion(method, assertion, graph, relsim))
+
 
 def main(args=None):
     args = parseArguments()
@@ -559,8 +598,7 @@ def main(args=None):
     while True:
         client, conn = s.accept()
         log.info('Accepted connection')
-        assertion = parseAssertion(client.recv(1024))
-        client.send(respondToAssertion(assertion, G, relsim))
+        serviceClient(args.method, client, G, relsim)
 
 
 
