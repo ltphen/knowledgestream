@@ -465,13 +465,13 @@ def execute(method, G, relsim, subId, predId, objId):
     if method == 'stream': # KNOWLEDGE STREAM (KS)
         with warnings.catch_warnings():
 	    warnings.simplefilter("ignore")
-	    mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
+	    mincostflows, times = compute_mincostflow(G, relsim, subId, predId, objId, outjson)
             return mincostflows[0]
     elif method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
-        scores, paths, rpaths, times = compute_relklinker(G, relsim, subs, preds, objs)
+        scores, paths, rpaths, times = compute_relklinker(G, relsim, subId, predId, objId)
         return scores[0]
     elif method == 'klinker':
-        scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
+        scores, paths, rpaths, times = compute_klinker(G, subId, predId, objId)
         return scores[0]
     elif method == 'predpath': # PREDPATH
         # TODO: this
@@ -480,7 +480,7 @@ def execute(method, G, relsim, subId, predId, objId):
         # TODO: this
         features, model = pra_train_model(G, spo_df)
     elif method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
-        scores, times = link_prediction(G, subs, preds, objs, selected_measure=method)
+        scores, times = link_prediction(G, subId, predId, objId, selected_measure=method)
         return scores[0]
 
 def batch(args, G, relsim):
