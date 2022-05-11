@@ -103,9 +103,11 @@ measure_map = {
 
 # prefix dict
 prefix = dict()
-prefix['dbo'] = "http://dbpedia.org/ontology"
-prefix['dbp'] = "http://dbpedia.org/property"
-prefix['dbr'] = "http://dbpedia.org/resource"
+prefix['dbo'] = "http://dbpedia.org/ontology/"
+prefix['dbp'] = "http://dbpedia.org/property/"
+prefix['dbr'] = "http://dbpedia.org/resource/"
+
+internalId = dict()
 
 
 # ================= KNOWLEDGE STREAM ALGORITHM ============
@@ -459,7 +461,6 @@ def execute(method, G, relsim, subId, predId, objId):
     """
     Validate a single assertion.
     """
-    base = splitext(basename(args.dataset))[0]
     t1 = time()
     if method == 'stream': # KNOWLEDGE STREAM (KS)
         with warnings.catch_warnings():
@@ -473,31 +474,11 @@ def execute(method, G, relsim, subId, predId, objId):
         scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
         return scores[0]
     elif method == 'predpath': # PREDPATH
-        # TODO: simplify
+        # TODO: this
         vec, model = predpath_train_model(G, spo_df) # train
-        print 'Time taken: {:.2f}s\n'.format(time() - t1)
-        # save model
-        predictor = { 'dictvectorizer': vec, 'model': model }
-        try:
-            outpkl = join(args.outdir, 'out_predpath_{}_{}.pkl'.format(base, DATE))
-	    with open(outpkl, 'wb') as g:
-	        pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
-	        print 'Saved: {}'.format(outpkl)
-	except IOError, e:
-            raise e
     elif method == 'pra': # PRA
-        # TODO: simplify
+        # TODO: this
         features, model = pra_train_model(G, spo_df)
-        print 'Time taken: {:.2f}s\n'.format(time() - t1)
-        # save model
-        predictor = { 'features': features, 'model': model }
-        try:
-            outpkl = join(args.outdir, 'out_pra_{}_{}.pkl'.format(base, DATE))
-	    with open(outpkl, 'wb') as g:
-	        pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
-		print 'Saved: {}'.format(outpkl)
-	except IOError, e:
-            raise e
     elif method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
         scores, times = link_prediction(G, subs, preds, objs, selected_measure=method)
         return scores[0]
@@ -544,18 +525,47 @@ def respondToAssertion(method, rdfAssertion, graph, relsim):
 
     return "ERROR: No assertion provided."
 
-def getId(element):
-    path = HOME + "kg/"
-    idFileNodes = open(path + "nodes.txt")
-    idFileRelations = open(path + "relations.txt")
-    for line in idFileNodes.readline():
-        if element in line:
-            return line
+def cacheIds():
+    path = HOME + "/kg/"
+    idFileNodes = open(path + "nodes.txt", 'r')
 
-    for line in idRelations.readline():
-        if element in line:
-            return line
-    return -1
+    for line in idFileNodes.readlines():
+        intId, iri = line.split(' ')
+        internalId[iri] = intId
+
+    idFileNodes.close()
+
+    idFileRelations = open(path + "relations.txt", 'r')
+    for line in idFileRelations.readlines():
+        intId, iri = line.split(' ')
+        internalId[iri] = intId
+
+    idFileRelations.close()
+
+def getId(element):
+    # TODO: make efficient
+    if len(internalId.items()) == 0:
+        log.info('Caching internal ids.')
+        cacheIds()
+    log.info('Searching for internal id of {}'.format(abbriviate(element)))
+    try:
+        intId = internalId[str(abbriviate(element))]
+    except KeyError as ex:
+        intId = -1
+        for key in internalId.keys():
+            try:
+                if abbriviate(element) in key:
+                    intId = internalId[key]
+            except:
+                pass
+    log.info('{} has the internal id {}'.format(element, intId))
+    return intId
+
+def abbriviate(element):
+    for short, iri in prefix.items():
+        if iri in element:
+            return element.replace(iri, short+":")
+    return element
 
 def serviceClient(method, client, graph, relsim):
     while True:
