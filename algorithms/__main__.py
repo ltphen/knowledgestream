@@ -42,19 +42,19 @@ from algorithms.linkpred.pref_attach import preferential_attachment
 # KG - DBpedia
 HOME = abspath(expanduser('~/Projects/knowledgestream/data/'))
 if not exists(HOME):
-	print 'Data directory not found: %s' % HOME
-	print 'Download data per instructions on:'
-	print '\thttps://github.com/shiralkarprashant/knowledgestream#data'
-	print 'and enter the directory path below.'
-	data_dir = raw_input('\nPlease enter data directory path: ')
-	if data_dir != '':
-		data_dir = abspath(expanduser(data_dir))
-	if not os.path.isdir(data_dir):
-		raise Exception('Entered path "%s" not a directory.' % data_dir)
-	if not exists(data_dir):
-		raise Exception('Directory does not exist: %s' % data_dir)
-	HOME = data_dir
-	# raise Exception('Please set HOME to data directory in algorithms/__main__.py')
+    print 'Data directory not found: %s' % HOME
+    print 'Download data per instructions on:'
+    print '\thttps://github.com/shiralkarprashant/knowledgestream#data'
+    print 'and enter the directory path below.'
+    data_dir = raw_input('\nPlease enter data directory path: ')
+    if data_dir != '':
+	data_dir = abspath(expanduser(data_dir))
+    if not os.path.isdir(data_dir):
+	raise Exception('Entered path "%s" not a directory.' % data_dir)
+    if not exists(data_dir):
+	raise Exception('Directory does not exist: %s' % data_dir)
+    HOME = data_dir
+    # raise Exception('Please set HOME to data directory in algorithms/__main__.py')
 PATH = join(HOME, 'kg/_undir/')
 assert exists(PATH)
 SHAPE = (6060993, 6060993, 663)
@@ -354,20 +354,20 @@ def parseArguments():
         return parser.parse_args()
 
 def readData(dataset):
-	df = pd.read_table(dataset, sep=',', header=0)
-	log.info('Read data: {} {}'.format(df.shape, basename(dataset)))
-	spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
-	log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
-	df = spo_df[['sid', 'pid', 'oid']].values
-	return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
+    df = pd.read_table(dataset, sep=',', header=0)
+    log.info('Read data: {} {}'.format(df.shape, basename(dataset)))
+    spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
+    log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
+    df = spo_df[['sid', 'pid', 'oid']].values
+    return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
 
 def ensureValidPaths(args):
-	outdir = abspath(expanduser(args.outdir))
-	assert exists(outdir)
-	args.outdir = outdir
-	datafile = abspath(expanduser(args.dataset))
-	assert exists(datafile)
-	args.dataset = datafile
+    outdir = abspath(expanduser(args.outdir))
+    assert exists(outdir)
+    args.outdir = outdir
+    datafile = abspath(expanduser(args.dataset))
+    assert exists(datafile)
+    args.dataset = datafile
 
 def execute(args, G, spo_df, relsim, subs, preds, objs):
 	base = splitext(basename(args.dataset))[0]
@@ -448,91 +448,89 @@ def execute(args, G, spo_df, relsim, subs, preds, objs):
 		print '* Saved results: %s' % outcsv
 
 def validateFact(args, G, spo_df, relsim, subs, preds, objs):
-	base = splitext(basename(args.dataset))[0]
-	t1 = time()
-	if args.method == 'stream': # KNOWLEDGE STREAM (KS)
-                # TODO: simplify
-		# compute min. cost flow
-		log.info('Computing KS for {} triples..'.format(spo_df.shape[0]))
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			outjson = join(args.outdir, 'out_kstream_{}_{}.json'.format(base, DATE))
-			outcsv = join(args.outdir, 'out_kstream_{}_{}.csv'.format(base, DATE))
-			mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
-			# save the results
-			spo_df['score'] = mincostflows
-			spo_df['time'] = times
-			spo_df = normalize(spo_df)
-			spo_df.to_csv(outcsv, sep=',', header=True, index=False)
-			log.info('* Saved results: %s' % outcsv)
-		log.info('Mincostflow computation complete. Time taken: {:.2f} secs.\n'.format(time() - t1))
-	elif args.method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
-		scores, paths, rpaths, times = compute_relklinker(G, relsim, subs, preds, objs)
-		spo_df['score'] = scores
-		spo_df['path'] = paths
-		spo_df['rpath'] = rpaths
-		spo_df['time'] = times
-		spo_df = normalize(spo_df)
-                return score
-	elif args.method == 'klinker':
-		scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
-		spo_df['score'] = scores
-		spo_df['path'] = paths
-		spo_df['rpath'] = rpaths
-		spo_df['time'] = times
-		spo_df = normalize(spo_df)
-                return score
-	elif args.method == 'predpath': # PREDPATH
-                # TODO: simplify
-		vec, model = predpath_train_model(G, spo_df) # train
-		print 'Time taken: {:.2f}s\n'.format(time() - t1)
-		# save model
-		predictor = { 'dictvectorizer': vec, 'model': model }
-		try:
-			outpkl = join(args.outdir, 'out_predpath_{}_{}.pkl'.format(base, DATE))
-			with open(outpkl, 'wb') as g:
-				pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
-			print 'Saved: {}'.format(outpkl)
-		except IOError, e:
-			raise e
-	elif args.method == 'pra': # PRA
-                # TODO: simplify
-		features, model = pra_train_model(G, spo_df)
-		print 'Time taken: {:.2f}s\n'.format(time() - t1)
-		# save model
-		predictor = { 'features': features, 'model': model }
-		try:
-			outpkl = join(args.outdir, 'out_pra_{}_{}.pkl'.format(base, DATE))
-			with open(outpkl, 'wb') as g:
-				pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
-			print 'Saved: {}'.format(outpkl)
-		except IOError, e:
-			raise e
-	elif args.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
-		scores, times = link_prediction(G, subs, preds, objs, selected_measure=args.method)
-		spo_df['score'] = scores
-		spo_df['time'] = times
-		spo_df = normalize(spo_df)
-                return scores
+    base = splitext(basename(args.dataset))[0]
+    t1 = time()
+    if args.method == 'stream': # KNOWLEDGE STREAM (KS)
+        # TODO: simplify
+        # compute min. cost flow
+        log.info('Computing KS for {} triples..'.format(spo_df.shape[0]))
+        with warnings.catch_warnings():
+	    warnings.simplefilter("ignore")
+            outjson = join(args.outdir, 'out_kstream_{}_{}.json'.format(base, DATE))
+	    outcsv = join(args.outdir, 'out_kstream_{}_{}.csv'.format(base, DATE))
+	    mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
+	    # save the results
+	    spo_df['score'] = mincostflows
+	    spo_df['time'] = times
+	    spo_df = normalize(spo_df)
+    elif args.method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
+        scores, paths, rpaths, times = compute_relklinker(G, relsim, subs, preds, objs)
+        spo_df['score'] = scores
+        spo_df['path'] = paths
+        spo_df['rpath'] = rpaths
+        spo_df['time'] = times
+        spo_df = normalize(spo_df)
+        return score
+    elif args.method == 'klinker':
+        scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
+	spo_df['score'] = scores
+        spo_df['path'] = paths
+        spo_df['rpath'] = rpaths
+        spo_df['time'] = times
+        spo_df = normalize(spo_df)
+        return score
+    elif args.method == 'predpath': # PREDPATH
+        # TODO: simplify
+        vec, model = predpath_train_model(G, spo_df) # train
+        print 'Time taken: {:.2f}s\n'.format(time() - t1)
+        # save model
+        predictor = { 'dictvectorizer': vec, 'model': model }
+        try:
+            outpkl = join(args.outdir, 'out_predpath_{}_{}.pkl'.format(base, DATE))
+	    with open(outpkl, 'wb') as g:
+	        pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
+	        print 'Saved: {}'.format(outpkl)
+	except IOError, e:
+            raise e
+    elif args.method == 'pra': # PRA
+        # TODO: simplify
+        features, model = pra_train_model(G, spo_df)
+        print 'Time taken: {:.2f}s\n'.format(time() - t1)
+        # save model
+        predictor = { 'features': features, 'model': model }
+        try:
+            outpkl = join(args.outdir, 'out_pra_{}_{}.pkl'.format(base, DATE))
+	    with open(outpkl, 'wb') as g:
+	        pkl.dump(predictor, g, protocol=pkl.HIGHEST_PROTOCOL)
+		print 'Saved: {}'.format(outpkl)
+	except IOError, e:
+            raise e
+    elif args.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
+        scores, times = link_prediction(G, subs, preds, objs, selected_measure=args.method)
+        spo_df['score'] = scores
+        spo_df['time'] = times
+        spo_df = normalize(spo_df)
+        return scores
 
 def listen():
-        # TODO: make configurable
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(("127.0.0.1", 4444))
-        s.listen(4)
-        return s
+    # TODO: make configurable
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 4444))
+    s.listen(4)
+    return s
 
 def parseAssertion(assertionString):
-        """
-        Returns a RDFGraph that contains the input assertion
-        """
-        g = RDFGraph()
-        g.parse(data=assertionString, format='ttl')
-        return g
+    """
+    Returns a RDFGraph that contains the input assertion
+    """
+    g = RDFGraph()
+    g.parse(data=assertionString, format='ttl')
+    return g
 
 def respondToAssertion(rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
         log.info('Validating assertion {} {} {}'.format(s, p, o))
+    # TODO: validate assertion
 
 def main(args=None):
     args = parseArguments()
@@ -577,23 +575,23 @@ def main(args=None):
     print '\nDone!\n'
 
 if __name__ == '__main__':
-	"""
-	Example calls: 
+    """
+    Example calls: 
 
-	cd ~/Projects/knowledgestream/
-	python setup.py develop OR python setup.py install
+    cd ~/Projects/knowledgestream/
+    python setup.py develop OR python setup.py install
 
-	# Knowledge Stream:
-	kstream -m 'stream' -d ./datasets/synthetic/Player_vs_Team_NBA.csv -o ./output/
-	kstream -m 'stream' -d ./datasets/sample.csv -o ./output/
+    # Knowledge Stream:
+    kstream -m 'stream' -d ./datasets/synthetic/Player_vs_Team_NBA.csv -o ./output/
+    kstream -m 'stream' -d ./datasets/sample.csv -o ./output/
 
-	# Relational Knowledge Linker (KL-REL)
-	kstream -m 'relklinker' -d ./datasets/sample.csv -o ./output/
+    # Relational Knowledge Linker (KL-REL)
+    kstream -m 'relklinker' -d ./datasets/sample.csv -o ./output/
 
-	# PredPath
-	kstream -m 'predpath' -d ./datasets/sample.csv -o ./output/	
+    # PredPath
+    kstream -m 'predpath' -d ./datasets/sample.csv -o ./output/	
 
-	# PRA
-	kstream -m 'pra' -d ./datasets/sample.csv -o ./output/	
-	"""
-	main()
+    # PRA
+    kstream -m 'pra' -d ./datasets/sample.csv -o ./output/	
+    """
+    main()
