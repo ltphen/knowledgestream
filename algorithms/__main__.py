@@ -370,7 +370,7 @@ def ensureValidPaths(args):
     assert exists(datafile)
     args.dataset = datafile
 
-def execute(args, G, spo_df, relsim, subs, preds, objs):
+def executeBatch(args, G, spo_df, relsim, subs, preds, objs):
 	base = splitext(basename(args.dataset))[0]
 	t1 = time()
 	if args.method == 'stream': # KNOWLEDGE STREAM (KS)
@@ -448,39 +448,24 @@ def execute(args, G, spo_df, relsim, subs, preds, objs):
 		spo_df.to_csv(outcsv, sep=',', header=True, index=False)
 		print '* Saved results: %s' % outcsv
 
-def validateFact(args, G, spo_df, relsim, subs, preds, objs):
+def execute(method, G, relsim, subs, preds, objs):
+    """
+    Validate a single assertion.
+    """
     base = splitext(basename(args.dataset))[0]
     t1 = time()
-    if args.method == 'stream': # KNOWLEDGE STREAM (KS)
-        # TODO: simplify
-        # compute min. cost flow
-        log.info('Computing KS for {} triples..'.format(spo_df.shape[0]))
+    if method == 'stream': # KNOWLEDGE STREAM (KS)
         with warnings.catch_warnings():
 	    warnings.simplefilter("ignore")
-            outjson = join(args.outdir, 'out_kstream_{}_{}.json'.format(base, DATE))
-	    outcsv = join(args.outdir, 'out_kstream_{}_{}.csv'.format(base, DATE))
 	    mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
-	    # save the results
-	    spo_df['score'] = mincostflows
-	    spo_df['time'] = times
-	    spo_df = normalize(spo_df)
-    elif args.method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
+            return mincostflows[0]
+    elif method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
         scores, paths, rpaths, times = compute_relklinker(G, relsim, subs, preds, objs)
-        spo_df['score'] = scores
-        spo_df['path'] = paths
-        spo_df['rpath'] = rpaths
-        spo_df['time'] = times
-        spo_df = normalize(spo_df)
-        return score
-    elif args.method == 'klinker':
+        return scores[0]
+    elif method == 'klinker':
         scores, paths, rpaths, times = compute_klinker(G, subs, preds, objs)
-	spo_df['score'] = scores
-        spo_df['path'] = paths
-        spo_df['rpath'] = rpaths
-        spo_df['time'] = times
-        spo_df = normalize(spo_df)
-        return score
-    elif args.method == 'predpath': # PREDPATH
+        return scores[0]
+    elif method == 'predpath': # PREDPATH
         # TODO: simplify
         vec, model = predpath_train_model(G, spo_df) # train
         print 'Time taken: {:.2f}s\n'.format(time() - t1)
@@ -493,7 +478,7 @@ def validateFact(args, G, spo_df, relsim, subs, preds, objs):
 	        print 'Saved: {}'.format(outpkl)
 	except IOError, e:
             raise e
-    elif args.method == 'pra': # PRA
+    elif method == 'pra': # PRA
         # TODO: simplify
         features, model = pra_train_model(G, spo_df)
         print 'Time taken: {:.2f}s\n'.format(time() - t1)
@@ -506,12 +491,9 @@ def validateFact(args, G, spo_df, relsim, subs, preds, objs):
 		print 'Saved: {}'.format(outpkl)
 	except IOError, e:
             raise e
-    elif args.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
-        scores, times = link_prediction(G, subs, preds, objs, selected_measure=args.method)
-        spo_df['score'] = scores
-        spo_df['time'] = times
-        spo_df = normalize(spo_df)
-        return scores
+    elif method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
+        scores, times = link_prediction(G, subs, preds, objs, selected_measure=method)
+        return scores[0]
 
 def batch(args, G, relsim):
     # ensure input file and output directory is valid.
@@ -524,7 +506,7 @@ def batch(args, G, relsim):
     subs, preds, objs, spo_df = readData(args.dataset)
 
     # execute
-    execute(args, G, spo_df, relsim, subs, preds, objs)
+    executeBatch(args, G, spo_df, relsim, subs, preds, objs)
 
 def listen():
     # TODO: make configurable
