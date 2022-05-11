@@ -21,6 +21,7 @@ from datetime import date
 import cPickle as pkl
 
 from datastructures.rgraph import Graph, weighted_degree
+from rdflib import Graph as RDFGraph
 
 # OUR METHODS
 from algorithms.mincostflow.ssp import succ_shortest_path, disable_logging
@@ -521,46 +522,59 @@ def listen():
         s.listen(4)
         return s
 
+def parseAssertion(assertionString):
+        """
+        Returns a RDFGraph that contains the input assertion
+        """
+        g = RDFGraph()
+        g.parse(data=assertionString, format='ttl')
+        return g
+
+def respondToAssertion(rdfAssertion, graph, relsim):
+    for s, p, o in rdfAssertion:
+        log.info('Validating assertion {} {} {}'.format(s, p, o))
+
 def main(args=None):
-	args = parseArguments()
+    args = parseArguments()
 
-	# logging
-	disable_logging(log.DEBUG)
+    # logging
+    disable_logging(log.DEBUG)
 
-	if args.method not in (
-		'stream', 'relklinker', 'klinker', 'predpath', 'pra',
-		'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
-	):
-		raise Exception('Invalid method specified.')
+    if args.method not in (
+        'stream', 'relklinker', 'klinker', 'predpath', 'pra',
+        'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
+        ):
+        raise Exception('Invalid method specified.')
 
-	# ensure input file and output directory is valid.
-        ensureValidPaths(args)
-	log.info('Launching {}..'.format(args.method))
-	log.info('Dataset: {}'.format(basename(args.dataset)))
-	log.info('Output dir: {}'.format(args.outdir))
+    # ensure input file and output directory is valid.
+    ensureValidPaths(args)
+    log.info('Launching {}..'.format(args.method))
+    log.info('Dataset: {}'.format(basename(args.dataset)))
+    log.info('Output dir: {}'.format(args.outdir))
 
-	# read data
-        subs, preds, objs, spo_df = readData(args.dataset)
+    # read data
+    subs, preds, objs, spo_df = readData(args.dataset)
 
-	# load knowledge graph
-	G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
-	assert np.all(G.csr.indices >= 0)
+    # load knowledge graph
+    G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
+    assert np.all(G.csr.indices >= 0)
 
-	# relational similarity
-	relsim = np.load(RELSIMPATH)
+    # relational similarity
+    relsim = np.load(RELSIMPATH)
 
-        # listen for connections
-        log.info('Waiting for connection')
-        s = listen()
-        while True:
-            client, conn = s.accept()
-            log.info('Accepted connection')
-            print client.recv(1024)
+    # listen for connections
+    log.info('Waiting for connection')
+    s = listen()
+    while True:
+        client, conn = s.accept()
+        log.info('Accepted connection')
+        assertion = parseAssertion(client.recv(1024))
+        respondToAssertion(assertion, G, relsim)
 
 
-	# execute
-        execute(args, G, spo_df, relsim, subs, preds, objs)
-	print '\nDone!\n'
+    # execute
+    execute(args, G, spo_df, relsim, subs, preds, objs)
+    print '\nDone!\n'
 
 if __name__ == '__main__':
 	"""
