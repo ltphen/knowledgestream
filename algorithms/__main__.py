@@ -40,7 +40,7 @@ from algorithms.linkpred.pref_attach import preferential_attachment
 
 
 # KG - DBpedia
-HOME = abspath(expanduser('~/Projects/knowledgestream/data/'))
+HOME = abspath(expanduser('~/knowledgestream/data/'))
 if not exists(HOME):
     print 'Data directory not found: %s' % HOME
     print 'Download data per instructions on:'
@@ -351,6 +351,7 @@ def parseArguments():
 			dest='dataset', help='Dataset to test on.')
 	parser.add_argument('-o', type=str, required=True,
 			dest='outdir', help='Path to the output directory.')
+        parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
         return parser.parse_args()
 
 def readData(dataset):
@@ -512,6 +513,19 @@ def validateFact(args, G, spo_df, relsim, subs, preds, objs):
         spo_df = normalize(spo_df)
         return scores
 
+def batch(args, G, relsim):
+    # ensure input file and output directory is valid.
+    ensureValidPaths(args)
+    log.info('Launching {}..'.format(args.method))
+    log.info('Dataset: {}'.format(basename(args.dataset)))
+    log.info('Output dir: {}'.format(args.outdir))
+
+    # read data
+    subs, preds, objs, spo_df = readData(args.dataset)
+
+    # execute
+    execute(args, G, spo_df, relsim, subs, preds, objs)
+
 def listen():
     # TODO: make configurable
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -531,6 +545,7 @@ def respondToAssertion(rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
         log.info('Validating assertion {} {} {}'.format(s, p, o))
     # TODO: validate assertion
+    return "42"
 
 def main(args=None):
     args = parseArguments()
@@ -544,21 +559,17 @@ def main(args=None):
         ):
         raise Exception('Invalid method specified.')
 
-    # ensure input file and output directory is valid.
-    ensureValidPaths(args)
-    log.info('Launching {}..'.format(args.method))
-    log.info('Dataset: {}'.format(basename(args.dataset)))
-    log.info('Output dir: {}'.format(args.outdir))
-
-    # read data
-    subs, preds, objs, spo_df = readData(args.dataset)
-
     # load knowledge graph
     G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
     assert np.all(G.csr.indices >= 0)
 
     # relational similarity
     relsim = np.load(RELSIMPATH)
+
+    if (args.batch):
+        batch(args, G, relsim)
+        print '\nDone!\n'
+        return
 
     # listen for connections
     log.info('Waiting for connection')
@@ -567,12 +578,9 @@ def main(args=None):
         client, conn = s.accept()
         log.info('Accepted connection')
         assertion = parseAssertion(client.recv(1024))
-        respondToAssertion(assertion, G, relsim)
+        client.send(respondToAssertion(assertion, G, relsim))
 
 
-    # execute
-    execute(args, G, spo_df, relsim, subs, preds, objs)
-    print '\nDone!\n'
 
 if __name__ == '__main__':
     """
