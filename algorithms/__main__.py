@@ -531,6 +531,7 @@ def cacheIds():
 
     for line in idFileNodes.readlines():
         intId, iri = line.split(' ')
+        iri = iri.replace('\n', '')
         internalId[iri] = int(intId)
 
     idFileNodes.close()
@@ -538,27 +539,20 @@ def cacheIds():
     idFileRelations = open(path + "relations.txt", 'r')
     for line in idFileRelations.readlines():
         intId, iri = line.split(' ')
+        iri = iri.replace('\n', '')
         internalId[iri] = int(intId)
 
     idFileRelations.close()
 
 def getId(element):
-    # TODO: make efficient
     if len(internalId.items()) == 0:
-        log.info('Caching internal ids.')
+        log.info('Caching internal IDs')
         cacheIds()
-    log.info('Searching for internal id of {}'.format(abbriviate(element)))
     try:
         intId = internalId[str(abbriviate(element))]
     except KeyError as ex:
-        intId = -1
-        for key in internalId.keys():
-            try:
-                if abbriviate(element) in key:
-                    log.info('Key: {}, {}'.format(key, type(key)))
-                    intId = internalId[key]
-            except:
-                pass
+        log.info('Cannot find internal ID of {}'.format(element))
+        raise ex
     log.info('{} has the internal id {}'.format(element, intId))
     return intId
 
@@ -571,11 +565,11 @@ def abbriviate(element):
 def serviceClient(method, client, graph, relsim):
     while True:
         try:
-            log.info('Waiting for an assertion.')
+            log.info('Waiting for an assertion...')
             request = client.recv(1024)
             assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
-            log.info('Assertions: {}, Score: {}'.format(request, response))
+            log.info('Assertion: {}, Score: {}'.format(request.replace('\n', ''), response))
             client.send(response)
         except socket.error as ex:
             log.info('Socket error occured.')
@@ -612,7 +606,7 @@ def main(args=None):
         return
 
     # listen for connections
-    log.info('Waiting for connection')
+    log.info('Waiting for connection...')
     s = listen()
     try:
         while True:
@@ -620,9 +614,8 @@ def main(args=None):
             log.info('Accepted connection')
             serviceClient(args.method, client, G, relsim)
     except KeyboardInterrupt:
+        print('\n')
         return
-
-
 
 if __name__ == '__main__':
     """
