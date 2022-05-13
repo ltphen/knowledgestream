@@ -3,6 +3,7 @@ Entry point for Knowledge Stream (KS) and
 Relational Knowledge Linker (KL-REL) algorithm.
 """
 
+import rdflib
 import sys
 import os
 import argparse
@@ -21,6 +22,7 @@ from datetime import date
 import cPickle as pkl
 
 from datastructures.rgraph import Graph, weighted_degree
+from rdflib import Graph as RDFGraph
 
 # OUR METHODS
 from algorithms.mincostflow.ssp import succ_shortest_path, disable_logging
@@ -39,21 +41,21 @@ from algorithms.linkpred.pref_attach import preferential_attachment
 
 
 # KG - DBpedia
-HOME = abspath(expanduser('~/Projects/knowledgestream/data/'))
+HOME = abspath(expanduser('~/knowledgestream/data/'))
 if not exists(HOME):
-	print 'Data directory not found: %s' % HOME
-	print 'Download data per instructions on:'
-	print '\thttps://github.com/shiralkarprashant/knowledgestream#data'
-	print 'and enter the directory path below.'
-	data_dir = raw_input('\nPlease enter data directory path: ')
-	if data_dir != '':
-		data_dir = abspath(expanduser(data_dir))
-	if not os.path.isdir(data_dir):
-		raise Exception('Entered path "%s" not a directory.' % data_dir)
-	if not exists(data_dir):
-		raise Exception('Directory does not exist: %s' % data_dir)
-	HOME = data_dir
-	# raise Exception('Please set HOME to data directory in algorithms/__main__.py')
+    print 'Data directory not found: %s' % HOME
+    print 'Download data per instructions on:'
+    print '\thttps://github.com/shiralkarprashant/knowledgestream#data'
+    print 'and enter the directory path below.'
+    data_dir = raw_input('\nPlease enter data directory path: ')
+    if data_dir != '':
+	data_dir = abspath(expanduser(data_dir))
+    if not os.path.isdir(data_dir):
+	raise Exception('Entered path "%s" not a directory.' % data_dir)
+    if not exists(data_dir):
+	raise Exception('Directory does not exist: %s' % data_dir)
+    HOME = data_dir
+    # raise Exception('Please set HOME to data directory in algorithms/__main__.py')
 PATH = join(HOME, 'kg/_undir/')
 assert exists(PATH)
 SHAPE = (6060993, 6060993, 663)
@@ -100,6 +102,15 @@ measure_map = {
 	}
 }
 
+# prefix dict
+prefix = dict()
+prefix['dbo'] = "http://dbpedia.org/ontology/"
+prefix['dbp'] = "http://dbpedia.org/property/"
+prefix['dbr'] = "http://dbpedia.org/resource/"
+
+internalId = dict()
+
+
 # ================= KNOWLEDGE STREAM ALGORITHM ============
 
 def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
@@ -144,8 +155,9 @@ def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
 		for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
 			s, p, o = [int(x) for x in (s, p, o)]
 			ts = time()
-			print '{}. Working on {} .. '.format(idx+1, (s, p, o)),
-			sys.stdout.flush()
+                        if len(subs) > 1:
+			    print '{}. Working on {} .. '.format(idx+1, (s, p, o)),
+			    sys.stdout.flush()
 
 			# set weights
 			relsimvec = np.array(relsim[p, :]) # specific to predicate p
@@ -160,9 +172,9 @@ def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
 			ff.write(json.dumps(mcflow.stream) + '\n')
 			tend = time()
 			times.append(tend - ts)
-			print 'mincostflow: {:.5f}, #paths: {}, time: {:.2f}s.'.format(
-				mcflow.flow, len(mcflow.stream['paths']), tend - ts
-			)
+                        if len(subs) > 1:
+			    print 'mincostflow: {:.5f}, #paths: {}, time: {:.2f}s.'.format(
+				mcflow.flow, len(mcflow.stream['paths']), tend - ts)
 
 			# reset state of the graph
 			np.copyto(G.csr.data, G_bak['data'])
@@ -208,7 +220,8 @@ def compute_relklinker(G, relsim, subs, preds, objs):
 
 	scores, paths, rpaths, times = [], [], [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		ts = time()
 		# set relational weight
 		G.csr.data[targets == o] = 1 # no cost for target t => max. specificity.
@@ -265,11 +278,13 @@ def compute_klinker(G, subs, preds, objs):
 	# compute closure
 	scores, paths, rpaths, times = [], [], [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		ts = time()
 		rp = closure(G, s, p, o, kind='metric', linkpred=True)
 		tend = time()
-		print 'time: {:.2f}s'.format(tend - ts)
+                if len(subs) > 1:
+		    print 'time: {:.2f}s'.format(tend - ts)
 		times.append(tend - ts)
 		scores.append(rp.score)
 		paths.append(rp.path)
@@ -320,12 +335,14 @@ def link_prediction(G, subs, preds, objs, selected_measure='katz'):
 	t1 = time()
 	scores, times = [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		sys.stdout.flush()
 		ts = time()
 		score = measure(G, s, p, o, linkpred=True)
 		tend = time()
-		print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
+                if len(subs) > 1:
+                    print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
 		times.append(tend - ts)
 		scores.append(score)
 
@@ -346,29 +363,30 @@ def parseArguments():
 	parser.add_argument('-m', type=str, required=True,
 			dest='method', help='Method to use: stream, relklinker, klinker, \
 			predpath, pra, katz, pathent, simrank, adamic_adar, jaccard, degree_product.')
-	parser.add_argument('-d', type=str, required=True,
+	parser.add_argument('-d', type=str, required=False,
 			dest='dataset', help='Dataset to test on.')
-	parser.add_argument('-o', type=str, required=True,
+	parser.add_argument('-o', type=str, required=False,
 			dest='outdir', help='Path to the output directory.')
+        parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
         return parser.parse_args()
 
 def readData(dataset):
-	df = pd.read_table(dataset, sep=',', header=0)
-	log.info('Read data: {} {}'.format(df.shape, basename(dataset)))
-	spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
-	log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
-	df = spo_df[['sid', 'pid', 'oid']].values
-	return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
+    df = pd.read_table(dataset, sep=',', header=0)
+    log.info('Read data: {} {}'.format(df.shape, basename(dataset)))
+    spo_df = df.dropna(axis=0, subset=['sid', 'pid', 'oid'])
+    log.info('Note: Found non-NA records: {}'.format(spo_df.shape))
+    df = spo_df[['sid', 'pid', 'oid']].values
+    return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
 
 def ensureValidPaths(args):
-	outdir = abspath(expanduser(args.outdir))
-	assert exists(outdir)
-	args.outdir = outdir
-	datafile = abspath(expanduser(args.dataset))
-	assert exists(datafile)
-	args.dataset = datafile
+    outdir = abspath(expanduser(args.outdir))
+    assert exists(outdir)
+    args.outdir = outdir
+    datafile = abspath(expanduser(args.dataset))
+    assert exists(datafile)
+    args.dataset = datafile
 
-def execute(args, G, spo_df, relsim, subs, preds, objs):
+def executeBatch(args, G, spo_df, relsim, subs, preds, objs):
 	base = splitext(basename(args.dataset))[0]
 	t1 = time()
 	if args.method == 'stream': # KNOWLEDGE STREAM (KS)
@@ -445,60 +463,185 @@ def execute(args, G, spo_df, relsim, subs, preds, objs):
 		outcsv = join(args.outdir, 'out_{}_{}_{}.csv'.format(args.method, base, DATE))
 		spo_df.to_csv(outcsv, sep=',', header=True, index=False)
 		print '* Saved results: %s' % outcsv
-    
 
+def execute(method, G, relsim, subId, predId, objId):
+    """
+    Validate a single assertion.
+    """
+    t1 = time()
+    if method == 'stream': # KNOWLEDGE STREAM (KS)
+        with warnings.catch_warnings():
+	    warnings.simplefilter("ignore")
+	    mincostflows, times = compute_mincostflow(G, relsim, subId, predId, objId, outjson)
+            return mincostflows[0]
+    elif method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
+        scores, paths, rpaths, times = compute_relklinker(G, relsim, subId, predId, objId)
+        return scores[0]
+    elif method == 'klinker':
+        scores, paths, rpaths, times = compute_klinker(G, subId, predId, objId)
+        return scores[0]
+    elif method == 'predpath': # PREDPATH
+        # TODO: this
+        vec, model = predpath_train_model(G, spo_df) # train
+    elif method == 'pra': # PRA
+        # TODO: this
+        features, model = pra_train_model(G, spo_df)
+    elif method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
+        scores, times = link_prediction(G, [subId], [predId], [objId], selected_measure=method)
+        return scores[0]
 
+def batch(args, G, relsim):
+    # ensure input file and output directory is valid.
+    ensureValidPaths(args)
+    log.info('Launching {}..'.format(args.method))
+    log.info('Dataset: {}'.format(basename(args.dataset)))
+    log.info('Output dir: {}'.format(args.outdir))
+
+    # read data
+    subs, preds, objs, spo_df = readData(args.dataset)
+
+    # execute
+    executeBatch(args, G, spo_df, relsim, subs, preds, objs)
+
+def listen():
+    # TODO: make configurable
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 4444))
+    s.listen(4)
+    return s
+
+def parseRequest(assertionString):
+    """
+    Returns a RDFGraph that contains the input assertion
+    """
+    log.info('Parsin assertion: {}'.format(assertionString))
+
+    prefixString = ""
+    for short, iri in prefix.items():
+        prefixString += "@prefix {}: <{}> .\n".format(short, iri)
+
+    g = RDFGraph()
+    g.parse(data=prefixString + assertionString, format='ttl')
+    return g
+
+def respondToAssertion(method, rdfAssertion, graph, relsim):
+    for s, p, o in rdfAssertion:
+        log.info('Validating assertion {} {} {}'.format(s, p, o))
+        return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
+
+    return "ERROR: No assertion provided."
+
+def cacheIds():
+    path = HOME + "/kg/"
+    idFileNodes = open(path + "nodes.txt", 'r')
+
+    for line in idFileNodes.readlines():
+        intId, iri = line.split(' ')
+        iri = iri.replace('\n', '')
+        internalId[iri] = int(intId)
+
+    idFileNodes.close()
+
+    idFileRelations = open(path + "relations.txt", 'r')
+    for line in idFileRelations.readlines():
+        intId, iri = line.split(' ')
+        iri = iri.replace('\n', '')
+        internalId[iri] = int(intId)
+
+    idFileRelations.close()
+
+def getId(element):
+    try:
+        intId = internalId[str(abbriviate(element))]
+    except KeyError as ex:
+        log.info('Cannot find internal ID of {}'.format(element))
+        raise ex
+    log.info('{} has the internal id {}'.format(element, intId))
+    return intId
+
+def abbriviate(element):
+    for short, iri in prefix.items():
+        if iri in element:
+            return element.replace(iri, short+":")
+    return element
+
+def serviceClient(method, client, graph, relsim):
+    while True:
+        try:
+            log.info('Waiting for an assertion...')
+            request = client.recv(1024)
+            assertion = parseRequest(request)
+            response = respondToAssertion(method, assertion, graph, relsim)
+            log.info('Assertion: {}, Score: {}'.format(request.replace('\n', ''), response))
+            client.send(response)
+        except socket.error as ex:
+            log.info('Socket error occured.')
+            return
+        except rdflib.plugins.parsers.notation3.BadSyntax as ex:
+            log.info('Exception while parsing: "{}"'.format(request))
+            client.send("PARSING ERROR\n")
+            continue
+        except Exception as ex:
+            raise ex
 
 def main(args=None):
-	args = parseArguments()
+    args = parseArguments()
 
-	# logging
-	disable_logging(log.DEBUG)
+    # logging
+    disable_logging(log.DEBUG)
 
-	if args.method not in (
-		'stream', 'relklinker', 'klinker', 'predpath', 'pra',
-		'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
-	):
-		raise Exception('Invalid method specified.')
+    if args.method not in (
+        'stream', 'relklinker', 'klinker', 'predpath', 'pra',
+        'katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'
+        ):
+        raise Exception('Invalid method specified.')
 
-	# ensure input file and output directory is valid.
-        ensureValidPaths(args)
-	log.info('Launching {}..'.format(args.method))
-	log.info('Dataset: {}'.format(basename(args.dataset)))
-	log.info('Output dir: {}'.format(args.outdir))
+    # load knowledge graph
+    G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
+    assert np.all(G.csr.indices >= 0)
 
-	# read data
-        subs, preds, objs, spo_df = readData(args.dataset)
+    # relational similarity
+    relsim = np.load(RELSIMPATH)
 
-	# load knowledge graph
-	G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
-	assert np.all(G.csr.indices >= 0)
+    if (args.batch):
+        batch(args, G, relsim)
+        print '\nDone!\n'
+        return
 
-	# relational similarity
-	relsim = np.load(RELSIMPATH)
+    # Read internal IDs from file
+    log.info('Caching internal IDs')
+    cacheIds()
 
-	# execute
-        execute(args, G, spo_df, relsim, subs, preds, objs)
-	print '\nDone!\n'
+    # listen for connections
+    log.info('Waiting for connection...')
+    s = listen()
+    try:
+        while True:
+            client, conn = s.accept()
+            log.info('Accepted connection')
+            serviceClient(args.method, client, G, relsim)
+    except KeyboardInterrupt:
+        print('\n')
+        return
 
 if __name__ == '__main__':
-	"""
-	Example calls: 
+    """
+    Example calls: 
 
-	cd ~/Projects/knowledgestream/
-	python setup.py develop OR python setup.py install
+    cd ~/Projects/knowledgestream/
+    python setup.py develop OR python setup.py install
 
-	# Knowledge Stream:
-	kstream -m 'stream' -d ./datasets/synthetic/Player_vs_Team_NBA.csv -o ./output/
-	kstream -m 'stream' -d ./datasets/sample.csv -o ./output/
+    # Knowledge Stream:
+    kstream -m 'stream' -d ./datasets/synthetic/Player_vs_Team_NBA.csv -o ./output/
+    kstream -m 'stream' -d ./datasets/sample.csv -o ./output/
 
-	# Relational Knowledge Linker (KL-REL)
-	kstream -m 'relklinker' -d ./datasets/sample.csv -o ./output/
+    # Relational Knowledge Linker (KL-REL)
+    kstream -m 'relklinker' -d ./datasets/sample.csv -o ./output/
 
-	# PredPath
-	kstream -m 'predpath' -d ./datasets/sample.csv -o ./output/	
+    # PredPath
+    kstream -m 'predpath' -d ./datasets/sample.csv -o ./output/	
 
-	# PRA
-	kstream -m 'pra' -d ./datasets/sample.csv -o ./output/	
-	"""
-	main()
+    # PRA
+    kstream -m 'pra' -d ./datasets/sample.csv -o ./output/	
+    """
+    main()
