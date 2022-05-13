@@ -504,7 +504,7 @@ def listen():
     s.listen(4)
     return s
 
-def parseAssertion(assertionString):
+def parseRequest(assertionString):
     """
     Returns a RDFGraph that contains the input assertion
     """
@@ -515,7 +515,6 @@ def parseAssertion(assertionString):
         prefixString += "@prefix {}: <{}> .\n".format(short, iri)
 
     g = RDFGraph()
-    log.info('Assertion with prefix:\n{}'.format(prefixString + assertionString))
     g.parse(data=prefixString + assertionString, format='ttl')
     return g
 
@@ -556,6 +555,7 @@ def getId(element):
         for key in internalId.keys():
             try:
                 if abbriviate(element) in key:
+                    log.info('Key: {}, {}'.format(key, type(key)))
                     intId = internalId[key]
             except:
                 pass
@@ -571,8 +571,9 @@ def abbriviate(element):
 def serviceClient(method, client, graph, relsim):
     while True:
         try:
+            log.info('Waiting for an assertion.')
             request = client.recv(1024)
-            assertion = parseAssertion(request)
+            assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
             log.info('Assertions: {}, Score: {}'.format(request, response))
             client.send(response)
@@ -613,10 +614,13 @@ def main(args=None):
     # listen for connections
     log.info('Waiting for connection')
     s = listen()
-    while True:
-        client, conn = s.accept()
-        log.info('Accepted connection')
-        serviceClient(args.method, client, G, relsim)
+    try:
+        while True:
+            client, conn = s.accept()
+            log.info('Accepted connection')
+            serviceClient(args.method, client, G, relsim)
+    except KeyboardInterrupt:
+        return
 
 
 
