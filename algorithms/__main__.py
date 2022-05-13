@@ -551,9 +551,6 @@ def cacheIds():
     idFileRelations.close()
 
 def getId(element):
-    if len(internalId.items()) == 0:
-        log.info('Caching internal IDs')
-        cacheIds()
     try:
         intId = internalId[str(abbriviate(element))]
     except KeyError as ex:
@@ -610,6 +607,10 @@ def main(args=None):
         batch(args, G, relsim)
         print '\nDone!\n'
         return
+
+    # Read internal IDs from file
+    log.info('Caching internal IDs')
+    cacheIds()
 
     # listen for connections
     log.info('Waiting for connection...')
