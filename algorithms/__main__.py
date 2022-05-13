@@ -3,6 +3,7 @@ Entry point for Knowledge Stream (KS) and
 Relational Knowledge Linker (KL-REL) algorithm.
 """
 
+import rdflib
 import sys
 import os
 import argparse
@@ -333,7 +334,6 @@ def link_prediction(G, subs, preds, objs, selected_measure='katz'):
 		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		sys.stdout.flush()
 		ts = time()
-                log.info("G: {}, s: {}, p: {}, o: {}\n".format(G, s, p, o))
 		score = measure(G, s, p, o, linkpred=True)
 		tend = time()
 		print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
@@ -571,13 +571,20 @@ def abbriviate(element):
 def serviceClient(method, client, graph, relsim):
     while True:
         try:
-            assertion = parseAssertion(client.recv(1024))
-        except Exception as ex:
-            log.info('Exception while parsing: {}'.format(ex))
+            request = client.recv(1024)
+            assertion = parseAssertion(request)
+            response = respondToAssertion(method, assertion, graph, relsim)
+            log.info('Assertions: {}, Score: {}'.format(request, response))
+            client.send(response)
+        except socket.error as ex:
+            log.info('Socket error occured.')
+            return
+        except rdflib.plugins.parsers.notation3.BadSyntax as ex:
+            log.info('Exception while parsing: "{}"'.format(request))
             client.send("PARSING ERROR\n")
             continue
-        client.send(respondToAssertion(method, assertion, graph, relsim))
-
+        except Exception as ex:
+            raise ex
 
 def main(args=None):
     args = parseArguments()
