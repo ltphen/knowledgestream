@@ -155,8 +155,9 @@ def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
 		for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
 			s, p, o = [int(x) for x in (s, p, o)]
 			ts = time()
-			print '{}. Working on {} .. '.format(idx+1, (s, p, o)),
-			sys.stdout.flush()
+                        if len(subs) > 1:
+			    print '{}. Working on {} .. '.format(idx+1, (s, p, o)),
+			    sys.stdout.flush()
 
 			# set weights
 			relsimvec = np.array(relsim[p, :]) # specific to predicate p
@@ -171,9 +172,9 @@ def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
 			ff.write(json.dumps(mcflow.stream) + '\n')
 			tend = time()
 			times.append(tend - ts)
-			print 'mincostflow: {:.5f}, #paths: {}, time: {:.2f}s.'.format(
-				mcflow.flow, len(mcflow.stream['paths']), tend - ts
-			)
+                        if len(subs) > 1:
+			    print 'mincostflow: {:.5f}, #paths: {}, time: {:.2f}s.'.format(
+				mcflow.flow, len(mcflow.stream['paths']), tend - ts)
 
 			# reset state of the graph
 			np.copyto(G.csr.data, G_bak['data'])
@@ -219,7 +220,8 @@ def compute_relklinker(G, relsim, subs, preds, objs):
 
 	scores, paths, rpaths, times = [], [], [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		ts = time()
 		# set relational weight
 		G.csr.data[targets == o] = 1 # no cost for target t => max. specificity.
@@ -276,11 +278,13 @@ def compute_klinker(G, subs, preds, objs):
 	# compute closure
 	scores, paths, rpaths, times = [], [], [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		ts = time()
 		rp = closure(G, s, p, o, kind='metric', linkpred=True)
 		tend = time()
-		print 'time: {:.2f}s'.format(tend - ts)
+                if len(subs) > 1:
+		    print 'time: {:.2f}s'.format(tend - ts)
 		times.append(tend - ts)
 		scores.append(rp.score)
 		paths.append(rp.path)
@@ -331,12 +335,14 @@ def link_prediction(G, subs, preds, objs, selected_measure='katz'):
 	t1 = time()
 	scores, times = [], []
 	for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
-		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
+                if len(subs) > 1:
+		    print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		sys.stdout.flush()
 		ts = time()
 		score = measure(G, s, p, o, linkpred=True)
 		tend = time()
-		print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
+                if len(subs) > 1:
+                    print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
 		times.append(tend - ts)
 		scores.append(score)
 
@@ -357,9 +363,9 @@ def parseArguments():
 	parser.add_argument('-m', type=str, required=True,
 			dest='method', help='Method to use: stream, relklinker, klinker, \
 			predpath, pra, katz, pathent, simrank, adamic_adar, jaccard, degree_product.')
-	parser.add_argument('-d', type=str, required=True,
+	parser.add_argument('-d', type=str, required=False,
 			dest='dataset', help='Dataset to test on.')
-	parser.add_argument('-o', type=str, required=True,
+	parser.add_argument('-o', type=str, required=False,
 			dest='outdir', help='Path to the output directory.')
         parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
         return parser.parse_args()
