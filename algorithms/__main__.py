@@ -333,6 +333,7 @@ def link_prediction(G, subs, preds, objs, selected_measure='katz'):
 		print '{}. Working on {}..'.format(idx+1, (s, p, o)),
 		sys.stdout.flush()
 		ts = time()
+                log.info("G: {}, s: {}, p: {}, o: {}\n".format(G, s, p, o))
 		score = measure(G, s, p, o, linkpred=True)
 		tend = time()
 		print 'score: {:.5f}, time: {:.2f}s'.format(score, tend - ts)
@@ -480,7 +481,7 @@ def execute(method, G, relsim, subId, predId, objId):
         # TODO: this
         features, model = pra_train_model(G, spo_df)
     elif method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
-        scores, times = link_prediction(G, subId, predId, objId, selected_measure=method)
+        scores, times = link_prediction(G, [subId], [predId], [objId], selected_measure=method)
         return scores[0]
 
 def batch(args, G, relsim):
@@ -521,7 +522,7 @@ def parseAssertion(assertionString):
 def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
         log.info('Validating assertion {} {} {}'.format(s, p, o))
-        return execute(method, graph, relsim, getId(s), getId(p), getId(o))
+        return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
 
     return "ERROR: No assertion provided."
 
@@ -531,14 +532,14 @@ def cacheIds():
 
     for line in idFileNodes.readlines():
         intId, iri = line.split(' ')
-        internalId[iri] = intId
+        internalId[iri] = int(intId)
 
     idFileNodes.close()
 
     idFileRelations = open(path + "relations.txt", 'r')
     for line in idFileRelations.readlines():
         intId, iri = line.split(' ')
-        internalId[iri] = intId
+        internalId[iri] = int(intId)
 
     idFileRelations.close()
 
