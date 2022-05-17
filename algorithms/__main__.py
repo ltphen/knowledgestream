@@ -631,12 +631,13 @@ def abbriviate(element):
 def serviceClient(method, client, graph, relsim):
     while True:
         try:
-            print
             log.info('Waiting for an assertion')
             request = client.recv(1024)
+            log.info('### VALIDATION START ###')
             assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
             log.info('Score: {}'.format(response))
+            log.info('### VALIDATION DONE ###')
             client.send(response)
         except socket.error as ex:
             log.info('Socket error occured.')
