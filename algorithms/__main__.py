@@ -544,7 +544,7 @@ def execute(method, G, relsim, subId, predId, objId):
         scores, paths, rpaths, times = compute_relklinker(G, relsim, [subId], [predId], [objId])
         return scores[0]
     elif method == 'klinker':
-        scores, paths, rpaths, times = compute_klinker(G, subId, predId, objId)
+        scores, paths, rpaths, times = compute_klinker(G, [subId], [predId], [objId])
         return scores[0]
     elif method == 'predpath': # PREDPATH
         # TODO: this
