@@ -570,7 +570,7 @@ def batch(args, G, relsim):
 def listen():
     # TODO: make configurable
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("127.0.0.1", 4444))
+    s.bind(("0.0.0.0", 4444))
     s.listen(4)
     return s
 
