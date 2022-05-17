@@ -41,7 +41,7 @@ from algorithms.linkpred.pref_attach import preferential_attachment
 
 
 # KG - DBpedia
-HOME = abspath(expanduser('~/knowledgestream/data/'))
+HOME = abspath(expanduser('/knowledgestream/data/'))
 if not exists(HOME):
     print 'Data directory not found: %s' % HOME
     print 'Download data per instructions on:'
