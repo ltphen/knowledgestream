@@ -432,6 +432,7 @@ def parseArguments():
 	parser.add_argument('-o', type=str, required=False,
 			dest='outdir', help='Path to the output directory.')
         parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
+        parser.add_argument('-p', type=int, required=False, default=4444, dest='port', help='Specify on which port shall be listened.')
         return parser.parse_args()
 
 def readData(dataset):
@@ -567,11 +568,10 @@ def batch(args, G, relsim):
     # execute
     executeBatch(args, G, spo_df, relsim, subs, preds, objs)
 
-def listen():
-    # TODO: make configurable
+def listen(connections=10, port=4444):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("0.0.0.0", 4444))
-    s.listen(4)
+    s.bind(("0.0.0.0", port))
+    s.listen(connections)
     return s
 
 def parseRequest(assertionString):
@@ -632,7 +632,7 @@ def serviceClient(method, client, graph, relsim):
     while True:
         try:
             print
-            log.info('Waiting for an assertion...')
+            log.info('Waiting for an assertion')
             request = client.recv(1024)
             assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
@@ -678,8 +678,8 @@ def main(args=None):
 
     # listen for connections
     print
-    log.info('Waiting for connection...')
-    s = listen()
+    s = listen(port=args.port)
+    log.info('Waiting for connection on port {}'.format(args.port))
     try:
         while True:
             client, conn = s.accept()
