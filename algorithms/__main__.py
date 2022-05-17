@@ -308,7 +308,6 @@ def compute_relklinker(G, relsim, subs, preds, objs):
 		G.csr.indices = indices.copy()
 		G.csr.indptr = indptr.copy()
 		sys.stdout.flush()
-	log.info('')
 	return scores, paths, rpaths, times
 
 # ================= KNOWLEDGE LINKER ALGORITHM ============
@@ -361,7 +360,6 @@ def compute_klinker(G, subs, preds, objs):
 		G.csr.indices = indices.copy()
 		G.csr.indptr = indptr.copy()
 		sys.stdout.flush()
-	log.info('')
 	return scores, paths, rpaths, times
 
 def normalize(df):
@@ -580,7 +578,7 @@ def parseRequest(assertionString):
     """
     Returns a RDFGraph that contains the input assertion
     """
-    log.info('Parsin assertion: {}'.format(assertionString))
+    log.info('Parsin assertion: {}'.format(assertionString.replace('\n', '')))
 
     prefixString = ""
     for short, iri in prefix.items():
@@ -592,7 +590,7 @@ def parseRequest(assertionString):
 
 def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
-        log.info('Validating assertion {} {} {} using {}'.format(s, p, o, method))
+        log.info('Validating assertion "{} {} {}" using {}'.format(s, p, o, method))
         return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
 
     return "ERROR: No assertion provided."
@@ -622,7 +620,6 @@ def getId(element):
     except KeyError as ex:
         log.info('Cannot find internal ID of {}'.format(element))
         raise ex
-    log.info('{} has the internal id {}'.format(element, intId))
     return intId
 
 def abbriviate(element):
@@ -634,11 +631,12 @@ def abbriviate(element):
 def serviceClient(method, client, graph, relsim):
     while True:
         try:
+            print
             log.info('Waiting for an assertion...')
             request = client.recv(1024)
             assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
-            log.info('Assertion: {}, Score: {}'.format(request.replace('\n', ''), response))
+            log.info('Score: {}'.format(response))
             client.send(response)
         except socket.error as ex:
             log.info('Socket error occured.')
@@ -679,6 +677,7 @@ def main(args=None):
     cacheIds()
 
     # listen for connections
+    print
     log.info('Waiting for connection...')
     s = listen()
     try:
