@@ -113,7 +113,73 @@ internalId = dict()
 
 # ================= KNOWLEDGE STREAM ALGORITHM ============
 
-def compute_mincostflow(G, relsim, subs, preds, objs, flowfile):
+def compute_mincostflow(G, relsim, subs, preds, objs):
+    """
+    Parameters:
+    -----------
+    G: rgraph
+            See `datastructures`.
+    relsim: ndarray
+            A square matrix containing relational similarity scores.
+    subs, preds, objs: sequence
+            Sequences representing the subject, predicate and object of 
+            input triples.
+    flowfile: str
+            Absolute path of the file where flow will be stored as JSON,
+            one line per triple.
+
+    Returns:
+    --------
+    mincostflows: sequence
+            A sequence containing total flow for each triple.
+    times: sequence
+            Times taken to compute stream of each triple. 
+    """
+    # take graph backup
+    G_bak = {
+	'data': G.csr.data.copy(), 
+	'indices': G.csr.indices.copy(),
+	'indptr': G.csr.indptr.copy()
+    }
+    cost_vec_bak = np.log(G.indeg_vec).copy()
+
+    # some set up
+    G.sources = np.repeat(np.arange(G.N), np.diff(G.csr.indptr))
+    G.targets = G.csr.indices % G.N
+    cost_vec = cost_vec_bak.copy()
+    indegsim = weighted_degree(G.indeg_vec, weight=WTFN)
+    specificity_wt = indegsim[G.targets] # specificity
+    relations = (G.csr.indices - G.targets) / G.N
+    mincostflows, times = [], []
+    for idx, (s, p, o) in enumerate(zip(subs, preds, objs)):
+        s, p, o = [int(x) for x in (s, p, o)]
+        ts = time()
+        if len(subs) > 1:
+            print '{}. Working on {} .. '.format(idx+1, (s, p, o)),
+            sys.stdout.flush()
+
+        # set weights
+        relsimvec = np.array(relsim[p, :]) # specific to predicate p
+        relsim_wt = relsimvec[relations]
+        G.csr.data = np.multiply(relsim_wt, specificity_wt)
+			
+        # compute
+        mcflow = succ_shortest_path(G, cost_vec, s, p, o, return_flow=False, npaths=5)
+	mincostflows.append(mcflow.flow)
+        tend = time()
+        times.append(tend - ts)
+        if len(subs) > 1:
+            print 'mincostflow: {:.5f}, #paths: {}, time: {:.2f}s.'.format(
+	        mcflow.flow, len(mcflow.stream['paths']), tend - ts)
+
+        # reset state of the graph
+        np.copyto(G.csr.data, G_bak['data'])
+        np.copyto(G.csr.indices, G_bak['indices'])
+        np.copyto(G.csr.indptr, G_bak['indptr'])
+        np.copyto(cost_vec, cost_vec_bak)
+	return mincostflows, times
+
+def compute_mincostflow_legacy(G, relsim, subs, preds, objs, flowfile):
 	"""
 	Parameters:
 	-----------
@@ -396,7 +462,7 @@ def executeBatch(args, G, spo_df, relsim, subs, preds, objs):
 			warnings.simplefilter("ignore")
 			outjson = join(args.outdir, 'out_kstream_{}_{}.json'.format(base, DATE))
 			outcsv = join(args.outdir, 'out_kstream_{}_{}.csv'.format(base, DATE))
-			mincostflows, times = compute_mincostflow(G, relsim, subs, preds, objs, outjson)
+			mincostflows, times = compute_mincostflow_legacy(G, relsim, subs, preds, objs, outjson)
 			# save the results
 			spo_df['score'] = mincostflows
 			spo_df['time'] = times
@@ -472,7 +538,7 @@ def execute(method, G, relsim, subId, predId, objId):
     if method == 'stream': # KNOWLEDGE STREAM (KS)
         with warnings.catch_warnings():
 	    warnings.simplefilter("ignore")
-	    mincostflows, times = compute_mincostflow(G, relsim, subId, predId, objId, outjson)
+	    mincostflows, times = compute_mincostflow(G, relsim, [subId], [predId], [objId])
             return mincostflows[0]
     elif method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
         scores, paths, rpaths, times = compute_relklinker(G, relsim, subId, predId, objId)
