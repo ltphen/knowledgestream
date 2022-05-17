@@ -526,7 +526,7 @@ def parseRequest(assertionString):
 
 def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
-        log.info('Validating assertion {} {} {}'.format(s, p, o))
+        log.info('Validating assertion {} {} {} using {}'.format(s, p, o, method))
         return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
 
     return "ERROR: No assertion provided."
