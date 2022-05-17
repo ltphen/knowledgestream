@@ -541,7 +541,7 @@ def execute(method, G, relsim, subId, predId, objId):
 	    mincostflows, times = compute_mincostflow(G, relsim, [subId], [predId], [objId])
             return mincostflows[0]
     elif method == 'relklinker': # RELATIONAL KNOWLEDGE LINKER (KL-REL)
-        scores, paths, rpaths, times = compute_relklinker(G, relsim, subId, predId, objId)
+        scores, paths, rpaths, times = compute_relklinker(G, relsim, [subId], [predId], [objId])
         return scores[0]
     elif method == 'klinker':
         scores, paths, rpaths, times = compute_klinker(G, subId, predId, objId)
