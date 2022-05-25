@@ -590,7 +590,8 @@ def parseRequest(assertionString):
 
 def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
-        log.info('Validating assertion "{} {} {}" using {}'.format(s, p, o, method))
+        log.info('Validating assertion "{} {} {}" using {}'.format(
+            s.encode('utf-8'), p.encode('utf-8'), o.encode('utf-8'), method))
         return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
 
     return "ERROR: No assertion provided."
@@ -616,7 +617,7 @@ def cacheIds():
 
 def getId(element):
     try:
-        intId = internalId[str(abbriviate(element))]
+        intId = internalId[abbriviate(element)]
     except KeyError as ex:
         log.info('Cannot find internal ID of {}'.format(element))
         raise ex
@@ -625,7 +626,7 @@ def getId(element):
 def abbriviate(element):
     for short, iri in prefix.items():
         if iri in element:
-            return element.replace(iri, short+":")
+            return element.replace(iri, short+":").encode('utf-8')
     return element
 
 def serviceClient(method, client, graph, relsim):
