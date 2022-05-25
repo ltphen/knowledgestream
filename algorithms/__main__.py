@@ -634,6 +634,10 @@ def serviceClient(method, client, graph, relsim):
         try:
             log.info('Waiting for an assertion')
             request = client.recv(1024)
+            if request == '':
+                log.info('Connection closed')
+                client.close()
+                return
             log.info('### VALIDATION START ###')
             assertion = parseRequest(request)
             response = respondToAssertion(method, assertion, graph, relsim)
@@ -681,9 +685,9 @@ def main(args=None):
     # listen for connections
     print
     s = listen(port=args.port)
-    log.info('Waiting for connection on port {}'.format(args.port))
     try:
         while True:
+            log.info('Waiting for connection on port {}'.format(args.port))
             client, conn = s.accept()
             log.info('Accepted connection')
             serviceClient(args.method, client, G, relsim)
