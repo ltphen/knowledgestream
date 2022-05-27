@@ -654,6 +654,9 @@ def serviceClient(method, client, graph, relsim):
         except KeyError as ex:
             client.send("ID ERROR\n")
             continue
+        except UnicodeEncodeError as ex:
+            client.send("ENCODING ERROR\n")
+            continue
         except Exception as ex:
             raise ex
 
