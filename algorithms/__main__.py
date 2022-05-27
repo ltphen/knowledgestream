@@ -651,6 +651,9 @@ def serviceClient(method, client, graph, relsim):
             log.info('Exception while parsing: "{}"'.format(request))
             client.send("PARSING ERROR\n")
             continue
+        except KeyError as ex:
+            client.send("ID ERROR\n")
+            continue
         except Exception as ex:
             raise ex
 
