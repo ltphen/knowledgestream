@@ -14,10 +14,11 @@ class GraphTransformer:
         self.relIdCount = 0
 
     def generateAdjacency(self, graphPath):
-        rdfGraph = self._readTurtleGraph(graphPath)
-        self._generateIndices(rdfGraph)
+        for rdfGraph in self._readTurtleGraph(graphPath):
+            self._generateIndices(rdfGraph)
+
         facts = []
-        for sub, pred, obj in rdfGraph:
+        for sub, pred, obj in self._readTurtleGraph(graphPath):
             facts.append([self.nodeId[sub], self.nodeId[obj], self.relId[pred]])
 
         adj = np.asarray(facts)
@@ -55,9 +56,11 @@ class GraphTransformer:
         return nextId
 
     def _readTurtleGraph(self, graphPath):
-        rdfGraph = RdfGraph()
-        rdfGraph.parse(graphPath, format='ttl')
-        return rdfGraph
+        with open(graphPath, 'r') as graphFile:
+            for line in graphFile.readlines():
+                rdfGraph = RdfGraph()
+                rdfGraph.parse(line, format='ttl')
+                yield rdfGraph
 
 g = GraphTransformer()
 g.generateAdjacency("/home/sascha/dbpedia.ttl")
