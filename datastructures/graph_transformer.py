@@ -1,4 +1,5 @@
 from rdflib import Graph as RdfGraph
+import numpy as np
 
 class GraphTransformer:
     """
@@ -15,6 +16,12 @@ class GraphTransformer:
     def generateAdjacency(self, graphPath):
         rdfGraph = self._readTurtleGraph(graphPath)
         self._generateIndices(rdfGraph)
+        facts = []
+        for sub, pred, obj in rdfGraph:
+            facts.append([self.nodeId[sub], self.nodeId[obj], self.relId[pred]])
+
+        adj = np.asarray(facts)
+        return adj
 
 
     def _generateIndices(self, rdfGraph):
