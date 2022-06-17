@@ -103,6 +103,7 @@ measure_map = {
 }
 
 # prefix dict
+ABBRIVIATEID=False
 prefix = dict()
 prefix['dbo'] = "http://dbpedia.org/ontology/"
 prefix['dbp'] = "http://dbpedia.org/property/"
@@ -625,12 +626,20 @@ def cacheIds():
     idFileRelations.close()
 
 def getId(element):
-    try:
-        intId = internalId[abbriviate(element)]
-    except KeyError as ex:
-        log.info('Cannot find internal ID of {}'.format(element))
-        raise ex
-    return intId
+    if ABBRIVIATEID:
+        try:
+            intId = internalId[abbriviate(element)]
+        except KeyError as ex:
+            log.info('Cannot find internal ID of {}'.format(element))
+            raise ex
+        return intId
+    else:
+        try:
+            intId = internalId[str(element)]
+        except KeyError as ex:
+            log.info('Cannot find internal ID of {}'.format(element))
+            raise ex
+        return intId
 
 def abbriviate(element):
     for short, iri in prefix.items():
@@ -690,6 +699,7 @@ def main(args=None):
     # relational similarity
     if args.method == 'stream' or args.method == 'relklinker':
         relsim = np.load(RELSIMPATH)
+        ABBRIVIATEID = True # TODO: remove when fixed
     else:
         relsim = None
 
