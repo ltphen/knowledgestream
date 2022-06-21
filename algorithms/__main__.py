@@ -602,7 +602,8 @@ def respondToAssertion(method, rdfAssertion, graph, relsim):
     for s, p, o in rdfAssertion:
         log.info('Validating assertion "{} {} {}" using {}'.format(
             s.encode('utf-8'), p.encode('utf-8'), o.encode('utf-8'), method))
-        return str(execute(method, graph, relsim, getId(s), getId(p), getId(o)))
+        result = execute(method, graph, relsim, getId(s), getId(p), getId(o))
+        return "{:f}".format(result)
 
     return "ERROR: No assertion provided."
 
