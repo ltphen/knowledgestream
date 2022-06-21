@@ -58,12 +58,12 @@ if not exists(HOME):
     # raise Exception('Please set HOME to data directory in algorithms/__main__.py')
 PATH = join(HOME, 'kg/_undir/')
 assert exists(PATH)
-SHAPE = (6060993, 6060993, 663)
+SHAPE = "data/kg/shape.txt"
 WTFN = 'logdegree'
 
 # relational similarity using TF-IDF representation and cosine similarity
 RELSIMPATH = join(HOME, 'relsim/coo_mat_sym_2016-10-24_log-tf_tfidf.npy') 
-assert exists(RELSIMPATH)
+#assert exists(RELSIMPATH) TODO: uncomment when relsim is generated
 
 # Date
 DATE = '{}'.format(date.today())
@@ -103,6 +103,7 @@ measure_map = {
 }
 
 # prefix dict
+ABBRIVIATEID=False
 prefix = dict()
 prefix['dbo'] = "http://dbpedia.org/ontology/"
 prefix['dbp'] = "http://dbpedia.org/property/"
@@ -443,6 +444,15 @@ def readData(dataset):
     df = spo_df[['sid', 'pid', 'oid']].values
     return df[:,0].astype(_int), df[:,1].astype(_int), df[:,2].astype(_int), spo_df
 
+def load_shape():
+    with open(SHAPE, 'r') as shapeFile:
+        line = shapeFile.readline()
+        line = line.replace('(', '')
+        line = line.replace(')', '')
+        line = line.replace(' ', '')
+        split = line.split(',')
+        return (int(split[0]), int(split[1]), int(split[2]))
+
 def ensureValidPaths(args):
     outdir = abspath(expanduser(args.outdir))
     assert exists(outdir)
@@ -616,12 +626,20 @@ def cacheIds():
     idFileRelations.close()
 
 def getId(element):
-    try:
-        intId = internalId[abbriviate(element)]
-    except KeyError as ex:
-        log.info('Cannot find internal ID of {}'.format(element))
-        raise ex
-    return intId
+    if ABBRIVIATEID:
+        try:
+            intId = internalId[abbriviate(element)]
+        except KeyError as ex:
+            log.info('Cannot find internal ID of {}'.format(element))
+            raise ex
+        return intId
+    else:
+        try:
+            intId = internalId[str(element)]
+        except KeyError as ex:
+            log.info('Cannot find internal ID of {}'.format(element))
+            raise ex
+        return intId
 
 def abbriviate(element):
     for short, iri in prefix.items():
@@ -673,11 +691,17 @@ def main(args=None):
         raise Exception('Invalid method specified.')
 
     # load knowledge graph
-    G = Graph.reconstruct(PATH, SHAPE, sym=True) # undirected
+    shape = load_shape()
+    print(shape)
+    G = Graph.reconstruct(PATH, shape, sym=True) # undirected
     assert np.all(G.csr.indices >= 0)
 
     # relational similarity
-    relsim = np.load(RELSIMPATH)
+    if args.method == 'stream' or args.method == 'relklinker':
+        relsim = np.load(RELSIMPATH)
+        ABBRIVIATEID = True # TODO: remove when fixed
+    else:
+        relsim = None
 
     if (args.batch):
         batch(args, G, relsim)
