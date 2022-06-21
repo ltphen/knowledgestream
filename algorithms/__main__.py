@@ -668,13 +668,13 @@ def serviceClient(method, client, graph, relsim):
             return
         except rdflib.plugins.parsers.notation3.BadSyntax as ex:
             log.info('Exception while parsing: "{}"'.format(request))
-            client.send("PARSING ERROR\n")
+            client.send("PARSING ERROR")
             continue
         except KeyError as ex:
-            client.send("ID ERROR\n")
+            client.send("ID ERROR")
             continue
         except UnicodeEncodeError as ex:
-            client.send("ENCODING ERROR\n")
+            client.send("ENCODING ERROR")
             continue
         except Exception as ex:
             raise ex
