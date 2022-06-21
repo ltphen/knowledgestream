@@ -635,7 +635,7 @@ def getId(element):
         return intId
     else:
         try:
-            intId = internalId[str(element)]
+            intId = internalId[str(element.encode('utf-8'))]
         except KeyError as ex:
             log.info('Cannot find internal ID of {}'.format(element))
             raise ex
