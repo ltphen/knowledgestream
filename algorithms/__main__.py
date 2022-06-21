@@ -638,7 +638,7 @@ def getId(element):
         try:
             intId = internalId[str(element.encode('utf-8'))]
         except KeyError as ex:
-            log.info('Cannot find internal ID of {}'.format(element))
+            log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
             raise ex
         return intId
 
@@ -668,13 +668,13 @@ def serviceClient(method, client, graph, relsim):
             return
         except rdflib.plugins.parsers.notation3.BadSyntax as ex:
             log.info('Exception while parsing: "{}"'.format(request))
-            client.send("PARSING ERROR\n")
+            client.send("PARSING ERROR")
             continue
         except KeyError as ex:
-            client.send("ID ERROR\n")
+            client.send("ID ERROR")
             continue
         except UnicodeEncodeError as ex:
-            client.send("ENCODING ERROR\n")
+            client.send("ENCODING ERROR")
             continue
         except Exception as ex:
             raise ex
@@ -723,6 +723,7 @@ def main(args=None):
             log.info('Accepted connection')
             serviceClient(args.method, client, G, relsim)
     except KeyboardInterrupt:
+        s.close()
         print('\n')
         return
 
