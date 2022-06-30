@@ -692,8 +692,12 @@ def main(args=None):
         raise Exception('Invalid method specified.')
 
     # load knowledge graph
-    shape = load_shape()
-    print(shape)
+    if not (args.method == 'stream' or args.method == 'relklinker'):
+        shape = load_shape()
+        print(shape)
+    else:
+        # TODO: remove when fixed
+        shape = (6060993, 6060993, 663)
     G = Graph.reconstruct(PATH, shape, sym=True) # undirected
     assert np.all(G.csr.indices >= 0)
 
