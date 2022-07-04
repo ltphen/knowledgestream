@@ -640,7 +640,8 @@ def getId(element):
 
 def getIdLegacy(element):
     try:
-        intId = internalId[abbriviate(element)]
+        ab = abbriviate(element)
+        intId = internalId[ab.encode('utf-8')]
     except KeyError as ex:
         log.info('Cannot find internal ID of {}'.format(element))
         raise ex
@@ -650,8 +651,8 @@ def getIdLegacy(element):
 def abbriviate(element):
     for short, iri in prefix.items():
         if iri in element:
-            return element.replace(iri, short+":").encode('utf-8')
-    return element
+            return str(element.replace(iri, short+":").encode('utf-8'))
+    return element.encode('utf-8')
 
 def serviceClient(method, client, graph, relsim):
     while True:
