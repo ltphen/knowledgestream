@@ -62,8 +62,8 @@ SHAPE = "data/kg/shape.txt"
 WTFN = 'logdegree'
 
 # relational similarity using TF-IDF representation and cosine similarity
-RELSIMPATH = join(HOME, 'relsim/coo_mat_sym_2016-10-24_log-tf_tfidf.npy') 
-#assert exists(RELSIMPATH) TODO: uncomment when relsim is generated
+RELSIMPATH = join(HOME, 'relsim/predicate-similarity.npy') 
+# assert exists(RELSIMPATH)
 
 # Date
 DATE = '{}'.format(date.today())
@@ -629,30 +629,9 @@ def getId(element):
     try:
         intId = internalId[str(element.encode('utf-8'))]
     except KeyError as ex:
-        # TODO: remove when kg is fixed
-        intId = getIdLegacy(element)
-        if (intId != None):
-            return intId
-        # remove until here
         log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
         raise ex
     return intId
-
-def getIdLegacy(element):
-    try:
-        ab = abbriviate(element)
-        intId = internalId[ab.encode('utf-8')]
-    except KeyError as ex:
-        log.info('Cannot find internal ID of {}'.format(element))
-        raise ex
-    return intId
-
-
-def abbriviate(element):
-    for short, iri in prefix.items():
-        if iri in element:
-            return str(element.replace(iri, short+":").encode('utf-8'))
-    return element.encode('utf-8')
 
 def serviceClient(method, client, graph, relsim):
     while True:
@@ -698,12 +677,8 @@ def main(args=None):
         raise Exception('Invalid method specified.')
 
     # load knowledge graph
-    if not (args.method == 'stream' or args.method == 'relklinker'):
-        shape = load_shape()
-        print(shape)
-    else:
-        # TODO: remove when fixed
-        shape = (6060993, 6060993, 663)
+    shape = load_shape()
+    print(shape)
     G = Graph.reconstruct(PATH, shape, sym=True) # undirected
     assert np.all(G.csr.indices >= 0)
 
