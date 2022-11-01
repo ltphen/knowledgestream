@@ -16,6 +16,7 @@ from time import time
 
 from datastructures.rgraph import Graph, weighted_degree
 from datastructures.Assertion import Assertion
+from datastructures.Message import Message
 from rdflib import Graph as RDFGraph
 
 # OUR METHODS
@@ -392,27 +393,23 @@ def listen(connections=10, port=4444):
     return s
 
 def parseRequest(assertionString):
-    """
-    Returns a RDFGraph that contains the input assertion
-    """
     log.info('Parsin assertion: {}'.format(assertionString.replace('\n', '')))
+    return Message(text=assertionString)
 
-    prefixString = ""
-    for short, iri in prefix.items():
-        prefixString += "@prefix {}: <{}> .\n".format(short, iri)
+def respondToRequest(method, request, graph, relsim):
+    if request.type == "call" and request.content == "type":
+        if method in ["predpath", "pra"]:
+            return Message(type="type_response", content="supervised")
+        else:
+            return Message(type="type_response", content="unsupervised")
 
-    g = RDFGraph()
-    g.parse(data=prefixString + assertionString, format='ttl')
-    return g
-
-def respondToAssertion(method, rdfAssertion, graph, relsim):
-    for s, p, o in rdfAssertion:
+    if request.type == "test":
         log.info('Validating assertion "{} {} {}" using {}'.format(
-            s.encode('utf-8'), p.encode('utf-8'), o.encode('utf-8'), method))
-        result = execute(method, graph, relsim, getId(s), getId(p), getId(o))
-        return "{:f}".format(result)
+            request.subject.encode('utf-8'), request.predicate.encode('utf-8'), request.object.encode('utf-8'), method))
+        result = execute(method, graph, relsim, getId(request.subject), getId(request.predicate), getId(request.object))
+        return Message(type="test_result", score="{:f}".format(result))
 
-    return "ERROR: No assertion provided."
+    return Message(type="error", content="Something went wrong.")
 
 def cacheIds():
     path = HOME + "/kg/"
@@ -451,19 +448,18 @@ def serviceClient(method, client, graph, relsim):
                 client.close()
                 return
             log.info('### VALIDATION START ###')
-            assertion = parseRequest(request)
-            response = respondToAssertion(method, assertion, graph, relsim)
-            log.info('Score: {}'.format(response))
+            requestMessage = parseRequest(request)
+            response = respondToRequest(method, requestMessage, graph, relsim)
             log.info('### VALIDATION DONE ###')
-            client.send(response)
+            client.send(response.serialize())
         except socket.error as ex:
             log.info('Socket error occured.')
             return
         except KeyError as ex:
-            client.send("ID ERROR")
+            client.send(Message(type="error", content="ID Error").serialize())
             continue
         except UnicodeEncodeError as ex:
-            client.send("ENCODING ERROR")
+            client.send(Message(type="error", content="Encoding Error").serialize())
             continue
         except Exception as ex:
             raise ex
