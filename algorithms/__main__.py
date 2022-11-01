@@ -3,22 +3,19 @@ Entry point for Knowledge Stream (KS) and
 Relational Knowledge Linker (KL-REL) algorithm.
 """
 
-import rdflib
 import sys
 import os
 import argparse
 import socket
 import numpy as np
-import pandas as pd
 import warnings
 import logging as log
 
-from pandas import DataFrame, Series
-from os.path import expanduser, abspath, isfile, isdir, basename, splitext, \
-	dirname, join, exists
+from os.path import expanduser, abspath, join, exists
 from time import time
 
 from datastructures.rgraph import Graph, weighted_degree
+from datastructures.Assertion import Assertion
 from rdflib import Graph as RDFGraph
 
 # OUR METHODS
@@ -61,12 +58,6 @@ WTFN = 'logdegree'
 # relational similarity using TF-IDF representation and cosine similarity
 RELSIMPATH = join(HOME, 'relsim/predicate-similarity.npy') 
 # assert exists(RELSIMPATH)
-
-# data types for int and float
-_short = np.int16
-_int = np.int32
-_int64 = np.int64
-_float = np.float
 
 # link prediction measures
 measure_map = {
