@@ -7,21 +7,15 @@ import os
 import argparse
 import socket
 import numpy as np
-import warnings
 import logging as log
 
 from os.path import expanduser, abspath, join, exists
-from time import time
 
 from datastructures.rgraph import Graph
 from algorithms.ClientService import ClientService
 
 # OUR METHODS
 from algorithms.mincostflow.ssp import disable_logging
-
-# STATE-OF-THE-ART ALGORITHMS
-from algorithms.predpath.predpath_mining import train_model as predpath_train_model
-from algorithms.pra.pra_mining import train_model as pra_train_model
 
 
 # KG - DBpedia
@@ -50,7 +44,6 @@ RELSIMPATH = join(HOME, 'relsim/predicate-similarity.npy')
 
 internalId = dict()
 
-
 def parseArguments():
 	# parse arguments
 	parser = argparse.ArgumentParser(
@@ -60,10 +53,8 @@ def parseArguments():
 	parser.add_argument('-m', type=str, required=True,
 			dest='method', help='Method to use: stream, relklinker, klinker, \
 			predpath, pra, katz, pathent, simrank, adamic_adar, jaccard, degree_product.')
-	parser.add_argument('-d', type=str, required=False,
-			dest='dataset', help='Dataset to test on.')
-	parser.add_argument('-o', type=str, required=False,
-			dest='outdir', help='Path to the output directory.')
+	parser.add_argument('-d', type=str, required=False, dest='dataset', help='Dataset to test on.')
+	parser.add_argument('-o', type=str, required=False, dest='outdir', help='Path to the output directory.')
         parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
         parser.add_argument('-p', type=int, required=False, default=4444, dest='port', help='Specify on which port shall be listened.')
         return parser.parse_args()
@@ -129,7 +120,7 @@ def main(args=None):
 
     if (args.batch):
         batch(args, G, relsim)
-        print '\nDone!\n'
+        print('\nDone!\n')
         return
 
     # Read internal IDs from file
