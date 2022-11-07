@@ -87,12 +87,6 @@ measure_map = {
 	}
 }
 
-# prefix dict TODO: remove
-prefix = dict()
-prefix['dbo'] = "http://dbpedia.org/ontology/"
-prefix['dbp'] = "http://dbpedia.org/property/"
-prefix['dbr'] = "http://dbpedia.org/resource/"
-
 internalId = dict()
 
 
