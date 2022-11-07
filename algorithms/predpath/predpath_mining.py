@@ -12,22 +12,16 @@ for identifying discriminative predicate paths.
 - Model building: Trains a logistic regression model that optimizes AUROC and empirically
 sets a threshold 'delta' for retaining most informative feature paths.
 """
-import os
 import sys
 import numpy as np
-import argparse
-import pandas as pd
 
 from time import time
-from os.path import exists, join, abspath, expanduser, basename, dirname, \
-	isdir, splitext
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import mutual_info_classif, SelectKBest
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
-from datastructures.rgraph import make_graph, Graph
 from datastructures.relationalpath import RelationalPath
 from algorithms.predpath.pathenum import get_paths as c_get_paths
 

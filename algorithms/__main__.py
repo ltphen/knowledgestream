@@ -17,7 +17,6 @@ from time import time
 from datastructures.rgraph import Graph, weighted_degree
 from datastructures.Assertion import Assertion
 from datastructures.Message import Message
-from rdflib import Graph as RDFGraph
 
 # OUR METHODS
 from algorithms.mincostflow.ssp import succ_shortest_path, disable_logging
