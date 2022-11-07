@@ -14,9 +14,7 @@ from os.path import expanduser, abspath, join, exists
 from time import time
 
 from datastructures.rgraph import Graph
-from datastructures.Assertion import Assertion
-from datastructures.Message import Message
-from algorithms.AlgorithmRunner import AlgorithmRunner
+from algorithms.ClientService import ClientService
 
 # OUR METHODS
 from algorithms.mincostflow.ssp import disable_logging
@@ -79,37 +77,11 @@ def load_shape():
         split = line.split(',')
         return (int(split[0]), int(split[1]), int(split[2]))
 
-def execute(method, G, relsim, subId, predId, objId):
-    """
-    Validate a single assertion.
-    """
-    algo = AlgorithmRunner(method, G, relsim)
-    return algo.validate(subId, predId, objId)
-
 def listen(connections=10, port=4444):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("0.0.0.0", port))
     s.listen(connections)
     return s
-
-def parseRequest(assertionString):
-    log.info('Parsin assertion: {}'.format(assertionString.replace('\n', '')))
-    return Message(text=assertionString)
-
-def respondToRequest(method, request, graph, relsim):
-    if request.type == "call" and request.content == "type":
-        if method in ["predpath", "pra"]:
-            return Message(type="type_response", content="supervised")
-        else:
-            return Message(type="type_response", content="unsupervised")
-
-    if request.type == "test":
-        log.info('Validating assertion "{} {} {}" using {}'.format(
-            request.subject.encode('utf-8'), request.predicate.encode('utf-8'), request.object.encode('utf-8'), method))
-        result = execute(method, graph, relsim, getId(request.subject), getId(request.predicate), getId(request.object))
-        return Message(type="test_result", score="{:f}".format(result))
-
-    return Message(type="error", content="Something went wrong.")
 
 def cacheIds():
     path = HOME + "/kg/"
@@ -130,39 +102,6 @@ def cacheIds():
 
     idFileRelations.close()
 
-def getId(element):
-    try:
-        intId = internalId[str(element.encode('utf-8'))]
-    except KeyError as ex:
-        log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
-        raise ex
-    return intId
-
-def serviceClient(method, client, graph, relsim):
-    while True:
-        try:
-            log.info('Waiting for an assertion')
-            request = client.recv(1024)
-            if request == '':
-                log.info('Connection closed')
-                client.close()
-                return
-            log.info('### VALIDATION START ###')
-            requestMessage = parseRequest(request)
-            response = respondToRequest(method, requestMessage, graph, relsim)
-            log.info('### VALIDATION DONE ###')
-            client.send(response.serialize())
-        except socket.error as ex:
-            log.info('Socket error occured.')
-            return
-        except KeyError as ex:
-            client.send(Message(type="error", content="ID Error").serialize())
-            continue
-        except UnicodeEncodeError as ex:
-            client.send(Message(type="error", content="Encoding Error").serialize())
-            continue
-        except Exception as ex:
-            raise ex
 
 def main(args=None):
     args = parseArguments()
@@ -198,14 +137,15 @@ def main(args=None):
     cacheIds()
 
     # listen for connections
-    print
+    print()
     s = listen(port=args.port)
     try:
         while True:
             log.info('Waiting for connection on port {}'.format(args.port))
             client, conn = s.accept()
             log.info('Accepted connection')
-            serviceClient(args.method, client, G, relsim)
+            clientService = ClientService(client, args.method, G, relsim, internalId)
+            clientService.serve()
     except KeyboardInterrupt:
         s.close()
         print('\n')
