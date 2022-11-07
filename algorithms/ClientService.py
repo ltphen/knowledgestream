@@ -5,13 +5,13 @@ from algorithms.AlgorithmRunner import AlgorithmRunner
 
 class ClientService:
 
-    def __init__(self, client, method, G, relsim, internalId):
+    def __init__(self, client, method, graph, relsim, internalId):
         self.client = client
         self.internalId = internalId
         self.method = method
-        self.G = G
+        self.graph = graph 
         self.relsim = relsim
-        self.algoRunner = AlgorithmRunner(method, G, relsim)
+        self.algoRunner = AlgorithmRunner(method, graph, relsim)
 
     def serve(self):
         while True:
@@ -24,7 +24,7 @@ class ClientService:
                     return
                 log.info('### VALIDATION START ###')
                 requestMessage = self.parseRequest(request)
-                response = self.respondToRequest(self.method, requestMessage, self.G, self.relsim)
+                response = self.respondToRequest(requestMessage)
                 log.info('### VALIDATION DONE ###')
                 self.client.send(response.serialize())
             except socket.error as ex:
@@ -39,28 +39,28 @@ class ClientService:
             except Exception as ex:
                 raise ex
 
-    def execute(self, method, G, relsim, subId, predId, objId):
+    def execute(self, subId, predId, objId):
         """
         Validate a single assertion.
         """
-        algo = AlgorithmRunner(method, G, relsim)
+        algo = AlgorithmRunner(self.method, self.graph, self.relsim)
         return algo.validate(subId, predId, objId)
     
     def parseRequest(self, assertionString):
         log.info('Parsin assertion: {}'.format(assertionString.replace('\n', '')))
         return Message(text=assertionString)
     
-    def respondToRequest(self, method, request, graph, relsim):
+    def respondToRequest(self, request):
         if request.type == "call" and request.content == "type":
-            if method in ["predpath", "pra"]:
+            if self.method in ["predpath", "pra"]:
                 return Message(type="type_response", content="supervised")
             else:
                 return Message(type="type_response", content="unsupervised")
     
         if request.type == "test":
             log.info('Validating assertion "{} {} {}" using {}'.format(
-                request.subject.encode('utf-8'), request.predicate.encode('utf-8'), request.object.encode('utf-8'), method))
-            result = self.execute(method, graph, relsim, self.getId(request.subject), self.getId(request.predicate), self.getId(request.object))
+                request.subject.encode('utf-8'), request.predicate.encode('utf-8'), request.object.encode('utf-8'), self.method))
+            result = self.execute(self.getId(request.subject), self.getId(request.predicate), self.getId(request.object))
             return Message(type="test_result", score="{:f}".format(result))
     
         return Message(type="error", content="Something went wrong.")
