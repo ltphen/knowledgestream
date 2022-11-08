@@ -5,6 +5,8 @@ from algorithms.klinker.closure import closure
 
 # STATE-OF-THE-ART ALGORITHMS
 from algorithms.predpath.predpath_mining import train_model as predpath_train_model
+from algorithms.predpath.predpath_mining import predict as predpath_predict
+
 from algorithms.pra.pra_mining import train_model as pra_train_model
 from algorithms.linkpred.katz import katz
 from algorithms.linkpred.pathentropy import pathentropy
@@ -85,8 +87,8 @@ class AlgorithmRunner:
             scores, paths, rpaths, times = self.compute_klinker(self.G, [subId], [predId], [objId])
             return scores[0]
         elif self.method == 'predpath': # PREDPATH
-            # TODO: this
-            vec, model = predpath_train_model(self.G, spo_df) # train
+            testingDf = pd.DataFrame({"sid": subId, "pid": predId, "oid": objId, "class": None})
+            return predpath_predict(self.G, testingDf, self.vec, self.model)[0]
         elif self.method == 'pra': # PRA
             # TODO: this
             features, model = pra_train_model(self.G, spo_df)
@@ -124,7 +126,7 @@ class AlgorithmRunner:
             tmpDict["sid"] = assertion.subjectId
             tmpDict["pid"] = assertion.predicateId
             tmpDict["oid"] = assertion.objectId
-            tmpDict["class"] = assertion.expectedScore
+            tmpDict["class"] = int(assertion.expectedScore)
             dictList.append(tmpDict)
 
         return pd.DataFrame(dictList)

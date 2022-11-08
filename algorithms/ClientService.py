@@ -42,7 +42,7 @@ class ClientService:
                 raise ex
     
     def parseRequest(self, assertionString):
-        log.info('Parsin request: {}'.format(assertionString.replace('\n', '')))
+        log.info('Parsing request: {}'.format(assertionString.replace('\n', '')))
         return Message(text=assertionString)
     
     def respondToRequest(self, request):
