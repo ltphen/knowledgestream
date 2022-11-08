@@ -128,7 +128,6 @@ def main(args=None):
     cacheIds()
 
     # listen for connections
-    print()
     s = listen(port=args.port)
     try:
         while True:

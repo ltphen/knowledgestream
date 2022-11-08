@@ -54,11 +54,17 @@ measure_map = {
 
 class AlgorithmRunner:
 
-    def __init__(self, method, G, relsim=None):
+    def __init__(self, method, G, internalId, relsim=None):
         self.method = method
         self.G = G
         # relsim only requred for KS and KL-REL
         self.relsim = relsim
+        self.internalId = internalId
+        
+    def test(self, sub, pred, obj):
+        log.info('Validating assertion "{} {} {}" using {}'.format(
+            sub.encode('utf-8'), pred.encode('utf-8'), obj.encode('utf-8'), self.method))
+        return self.validate(self.getId(sub), self.getId(pred), self.getId(obj))
 
     def validate(self, subId, predId, objId):
         """
@@ -84,6 +90,14 @@ class AlgorithmRunner:
         elif self.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
             scores, times = self.link_prediction(self.G, [subId], [predId], [objId], selected_measure=self.method)
             return scores[0]
+
+    def getId(self, element):
+        try:
+            intId = self.internalId[str(element.encode('utf-8'))]
+        except KeyError as ex:
+            log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
+            raise ex
+        return intId
 
     
     # ================= KNOWLEDGE STREAM ALGORITHM ============
