@@ -1,10 +1,9 @@
 class Assertion:
-    def __init__(self, subject, predicate, object):
-        self.subject = subject
-        self.predicate = predicate
-        self.object = object
+    def __init__(self, subjectId, predicateId, objectId):
+        self.subjectId = subjectId
+        self.predicateId = predicateId
+        self.objectId = objectId
         self._expectedScore = None
-        self.score = None
         
     @property
     def expectedScore(self):

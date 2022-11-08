@@ -14,8 +14,10 @@ from algorithms.linkpred.adamic_adar import adamic_adar
 from algorithms.linkpred.pref_attach import preferential_attachment
 
 from datastructures.rgraph import weighted_degree
+from datastructures.Assertion import Assertion
 from time import time
 import numpy as np
+import pandas as pd
 import logging as log
 import warnings
 import sys
@@ -60,6 +62,7 @@ class AlgorithmRunner:
         # relsim only requred for KS and KL-REL
         self.relsim = relsim
         self.internalId = internalId
+        self.trainingData = []
         
     def test(self, sub, pred, obj):
         log.info('Validating assertion "{} {} {}" using {}'.format(
@@ -91,6 +94,21 @@ class AlgorithmRunner:
             scores, times = self.link_prediction(self.G, [subId], [predId], [objId], selected_measure=self.method)
             return scores[0]
 
+    def addTrainingData(self, sub, pred, obj, expectedScore):
+        assertion = Assertion(self.getId(sub), self.getId(pred), self.getId(obj))
+        assertion.expectedScore = expectedScore
+        self.trainingData.append(assertion)
+
+    def train(self):
+        trainingDf = self._createTrainingDataFrame()
+
+        if self.method == 'predpath': # PREDPATH
+            # TODO: this
+            self.vec, self.model = predpath_train_model(self.G, trainingDf)
+        elif self.method == 'pra': # PRA
+            # TODO: this
+            features, model = pra_train_model(self.G, trainingDf)
+
     def getId(self, element):
         try:
             intId = self.internalId[str(element.encode('utf-8'))]
@@ -98,6 +116,19 @@ class AlgorithmRunner:
             log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
             raise ex
         return intId
+
+    def _createTrainingDataFrame(self):
+        dictList = []
+        for assertion in self.trainingData:
+            tmpDict = dict()
+            tmpDict["sid"] = assertion.subjectId
+            tmpDict["pid"] = assertion.predicateId
+            tmpDict["oid"] = assertion.objectId
+            tmpDict["class"] = assertion.expectedScore
+            dictList.append(tmpDict)
+
+        return pd.DataFrame(dictList)
+
 
     
     # ================= KNOWLEDGE STREAM ALGORITHM ============

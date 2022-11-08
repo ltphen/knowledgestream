@@ -3,9 +3,12 @@ import socket
 from datastructures.Message import Message
 from algorithms.AlgorithmRunner import AlgorithmRunner
 
+STATES = ["waiting", "training", "testing"]
+
 class ClientService:
 
     def __init__(self, client, method, graph, relsim, internalId):
+        self._state = "waiting"
         self.type = self._type(method)
         self.client = client
         self.algoRunner = AlgorithmRunner(method, graph, internalId, relsim)
@@ -45,8 +48,21 @@ class ClientService:
     def respondToRequest(self, request):
         if request.type == "call" and request.content == "type":
             return Message(type="type_response", content=self.type)
+
+        if self.state == "waiting" and request.type == "call" and request.content == "training_start":
+            self.state = "training"
+            return Message(type="ack", content="training_start_ack")
+
+        if self.state == "training" and request.type == "train":
+            self.algoRunner.addTrainingData(request.subject, request.predicate, request.object, request.score)
+            return Message(type="ack", content="train_ack")
+
+        if self.state == "training" and request.type == "call" and request.content == "training_complete":
+            self.algoRunner.train()
+            self.state = "testing"
+            return Message(type="ack", content="training_complete_ack")
     
-        if request.type == "test":
+        if self.state == "testing" and request.type == "test":
             result = self.algoRunner.test(request.subject, request.predicate, request.object)
             return Message(type="test_result", score="{:f}".format(result))
     
@@ -57,4 +73,15 @@ class ClientService:
         if method in ["predpath", "pra"]:
             return "supervised"
         else:
+            self.state = "testing"
             return "unsupervised"
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        if state in STATES:
+            self._state = state
+
