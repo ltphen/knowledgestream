@@ -162,7 +162,6 @@ def predict(G, triples, vec, model):
 	features, pos_features, neg_features, measurements = extract_paths(G, triples, y)
 	print 'P: +:{}, -:{}, unique tot:{}'.format(len(pos_features), len(neg_features), len(features))
 	X = vec.fit_transform(measurements)
-        print("fit_transform done") # TODO: remove
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
@@ -228,7 +227,6 @@ def extract_paths(G, triples, y, length=3, features=None):
 		# print '(T:{}, F:{})'.format(idx+1, len(triple_feature))
 		sys.stdout.flush()
 	print ''
-        print("Length of features: {}".format(len(features)))
 	if return_features:
 		return features, pos_features, neg_features, measurements
 	return measurements
