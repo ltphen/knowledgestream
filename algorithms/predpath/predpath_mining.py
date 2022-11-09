@@ -162,6 +162,7 @@ def predict(G, triples, vec, model):
 	features, pos_features, neg_features, measurements = extract_paths(G, triples, y)
 	print 'P: +:{}, -:{}, unique tot:{}'.format(len(pos_features), len(neg_features), len(features))
 	X = vec.fit_transform(measurements)
+        # TODO: Error occurs in prediction, does not find enough paths, needs at least 100
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''

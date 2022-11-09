@@ -7,11 +7,11 @@ STATES = ["waiting", "training", "testing"]
 
 class ClientService:
 
-    def __init__(self, client, method, graph, relsim, internalId):
+    def __init__(self, client, method, graph, trainingGraph, relsim, internalId):
         self._state = "waiting"
         self.type = self._type(method)
         self.client = client
-        self.algoRunner = AlgorithmRunner(method, graph, internalId, relsim)
+        self.algoRunner = AlgorithmRunner(method, graph, trainingGraph, internalId, relsim)
 
     def serve(self):
         while True:
@@ -40,7 +40,6 @@ class ClientService:
                 continue
             except ValueError as ex:
                 self.client.send(Message(type="error", content="Value Error").serialize())
-                print(ex) # TODO: remove
                 continue
             except Exception as ex:
                 raise ex

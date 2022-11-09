@@ -8,6 +8,7 @@ from algorithms.predpath.predpath_mining import train_model as predpath_train_mo
 from algorithms.predpath.predpath_mining import predict as predpath_predict
 
 from algorithms.pra.pra_mining import train_model as pra_train_model
+from algorithms.pra.pra_mining import predict as pra_predict
 from algorithms.linkpred.katz import katz
 from algorithms.linkpred.pathentropy import pathentropy
 from algorithms.linkpred.simrank import c_simrank
@@ -58,10 +59,10 @@ measure_map = {
 
 class AlgorithmRunner:
 
-    def __init__(self, method, G, internalId, relsim=None):
+    def __init__(self, method, G, trainingGraph, internalId, relsim=None):
         self.method = method
         self.G = G
-        # relsim only requred for KS and KL-REL
+        self.trainingGraph = trainingGraph
         self.relsim = relsim
         self.internalId = internalId
         self.trainingData = []
@@ -90,8 +91,8 @@ class AlgorithmRunner:
             testingDf = self._createTestingDataFrame(subId, predId, objId)
             return predpath_predict(self.G, testingDf, self.vec, self.model)[0]
         elif self.method == 'pra': # PRA
-            # TODO: this
-            features, model = pra_train_model(self.G, spo_df)
+            testingDf = self._createTestingDataFrame(subId, predId, objId)
+            return pra_predict(self.G, self.features, self.model, testingDf)[0]
         elif self.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
             scores, times = self.link_prediction(self.G, [subId], [predId], [objId], selected_measure=self.method)
             return scores[0]
@@ -105,11 +106,9 @@ class AlgorithmRunner:
         trainingDf = self._createTrainingDataFrame()
 
         if self.method == 'predpath': # PREDPATH
-            # TODO: this
-            self.vec, self.model = predpath_train_model(self.G, trainingDf)
+            self.vec, self.model = predpath_train_model(self.trainingGraph, trainingDf)
         elif self.method == 'pra': # PRA
-            # TODO: this
-            features, model = pra_train_model(self.G, trainingDf)
+            self.features, self.model = pra_train_model(self.trainingGraph, trainingDf)
 
     def getId(self, element):
         try:

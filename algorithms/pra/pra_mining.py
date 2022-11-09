@@ -130,7 +130,6 @@ def predict(G, features, model, triples):
 	print '=> Path extraction..'
 	t1 = time()
 	X = c_construct_feature_matrix(G, features, triples)
-        print("Going to predict")
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
