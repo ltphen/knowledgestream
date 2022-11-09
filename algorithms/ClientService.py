@@ -38,6 +38,10 @@ class ClientService:
             except UnicodeEncodeError as ex:
                 self.client.send(Message(type="error", content="Encoding Error").serialize())
                 continue
+            except ValueError as ex:
+                self.client.send(Message(type="error", content="Value Error").serialize())
+                print(ex) # TODO: remove
+                continue
             except Exception as ex:
                 raise ex
     

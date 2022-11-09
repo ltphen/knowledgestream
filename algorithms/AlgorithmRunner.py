@@ -87,7 +87,7 @@ class AlgorithmRunner:
             scores, paths, rpaths, times = self.compute_klinker(self.G, [subId], [predId], [objId])
             return scores[0]
         elif self.method == 'predpath': # PREDPATH
-            testingDf = pd.DataFrame({"sid": subId, "pid": predId, "oid": objId, "class": None})
+            testingDf = self._createTestingDataFrame(subId, predId, objId)
             return predpath_predict(self.G, testingDf, self.vec, self.model)[0]
         elif self.method == 'pra': # PRA
             # TODO: this
@@ -130,6 +130,14 @@ class AlgorithmRunner:
             dictList.append(tmpDict)
 
         return pd.DataFrame(dictList)
+
+    def _createTestingDataFrame(self, subId, predId, objId):
+        tmp = dict()
+        tmp['sid'] = [subId]
+        tmp['pid'] = [predId]
+        tmp['oid'] = [objId]
+        tmp['class'] = None
+        return pd.DataFrame(tmp)
 
 
     
