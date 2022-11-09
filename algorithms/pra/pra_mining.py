@@ -11,20 +11,13 @@ frequency of each feature. We use the latter in this implementation.
 - Model building: Trains a logistic regression model, and returns the weights 
 to rank individual features.
 """
-import os
-import sys
 import numpy as np
-import argparse
-import pandas as pd
 
 from time import time
-from os.path import exists, join, abspath, expanduser, basename, dirname, \
-	isdir, splitext
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 
-from datastructures.rgraph import make_graph, Graph
 from datastructures.relationalpath import RelationalPath
 from algorithms.pra.pra_helper \
 	import extract_paths as c_extract_paths, \
@@ -137,6 +130,7 @@ def predict(G, features, model, triples):
 	print '=> Path extraction..'
 	t1 = time()
 	X = c_construct_feature_matrix(G, features, triples)
+        print("Going to predict")
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
