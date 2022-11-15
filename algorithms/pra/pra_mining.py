@@ -12,6 +12,7 @@ frequency of each feature. We use the latter in this implementation.
 to rank individual features.
 """
 import numpy as np
+import pandas as pd
 
 from time import time
 from sklearn.linear_model import LogisticRegression
@@ -24,6 +25,39 @@ from algorithms.pra.pra_helper \
 	construct_feature_matrix as c_construct_feature_matrix
 
 # ================ WRAPPER ================
+
+def train(graph, assertionsList):
+    """
+    Train a model for each predicate that is in the data set.
+    """
+    groupedTrainingData = dict()
+    for assertion in assertionsList:
+        if not assertion.predicateId in groupedTrainingData.keys():
+            groupedTrainingData[assertion.predicateId] = []
+        groupedTrainingData[assertion.predicateId].append(assertion)
+
+    predicate2model = dict()
+    # predicate2model[predicate] = (features, model)
+    counter = 0
+    for predicate in groupedTrainingData.keys():
+        # TODO: graph has to be coppied, since it is modified during training
+        predicate2model[predicate] = train_model(graph, _createTrainingDataFrame(groupedTrainingData[predicate]))
+        counter += 1
+        print("Trained model for {} out of {} predicates".format(counter, len(groupedTrainingData.keys())))
+    return predicate2model
+
+
+def _createTrainingDataFrame(trainingData):
+    dictList = []
+    for assertion in trainingData:
+        tmpDict = dict()
+        tmpDict["sid"] = assertion.subjectId
+        tmpDict["pid"] = assertion.predicateId
+        tmpDict["oid"] = assertion.objectId
+        tmpDict["class"] = int(assertion.expectedScore)
+        dictList.append(tmpDict)
+
+    return pd.DataFrame(dictList)
 
 def train_model(G, triples, maxfeatures=100, cv=10):
 	"""

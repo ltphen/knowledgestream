@@ -7,7 +7,7 @@ from algorithms.klinker.closure import closure
 from algorithms.predpath.predpath_mining import train as predpath_train
 from algorithms.predpath.predpath_mining import predict as predpath_predict
 
-from algorithms.pra.pra_mining import train_model as pra_train_model
+from algorithms.pra.pra_mining import train as pra_train
 from algorithms.pra.pra_mining import predict as pra_predict
 from algorithms.linkpred.katz import katz
 from algorithms.linkpred.pathentropy import pathentropy
@@ -93,7 +93,8 @@ class AlgorithmRunner:
             return predpath_predict(self.G, testingDf, vec, model)[0]
         elif self.method == 'pra': # PRA
             testingDf = self._createTestingDataFrame(subId, predId, objId)
-            return pra_predict(self.G, self.features, self.model, testingDf)[0]
+            features, model = self.predicate2model[predId]
+            return pra_predict(self.G, features, model, testingDf)[0]
         elif self.method in ('katz', 'pathent', 'simrank', 'adamic_adar', 'jaccard', 'degree_product'):
             scores, times = self.link_prediction(self.G, [subId], [predId], [objId], selected_measure=self.method)
             return scores[0]
@@ -104,12 +105,10 @@ class AlgorithmRunner:
         self.trainingData.append(assertion)
 
     def train(self):
-        trainingDf = self._createTrainingDataFrame()
-
         if self.method == 'predpath': # PREDPATH
             self.predicate2model = predpath_train(self.trainingGraph, self.trainingData)
         elif self.method == 'pra': # PRA
-            self.features, self.model = pra_train_model(self.trainingGraph, trainingDf)
+            self.predicate2model = pra_train(self.trainingGraph, self.trainingData)
 
     def getId(self, element):
         try:
@@ -118,18 +117,6 @@ class AlgorithmRunner:
             log.info('Cannot find internal ID of {}'.format(element.encode('utf-8')))
             raise ex
         return intId
-
-    def _createTrainingDataFrame(self):
-        dictList = []
-        for assertion in self.trainingData:
-            tmpDict = dict()
-            tmpDict["sid"] = assertion.subjectId
-            tmpDict["pid"] = assertion.predicateId
-            tmpDict["oid"] = assertion.objectId
-            tmpDict["class"] = int(assertion.expectedScore)
-            dictList.append(tmpDict)
-
-        return pd.DataFrame(dictList)
 
     def _createTestingDataFrame(self, subId, predId, objId):
         tmp = dict()
