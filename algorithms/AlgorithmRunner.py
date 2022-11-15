@@ -89,8 +89,8 @@ class AlgorithmRunner:
             return scores[0]
         elif self.method == 'predpath': # PREDPATH
             testingDf = self._createTestingDataFrame(subId, predId, objId)
-            vec, model = self.predicate2model[predId]
-            return predpath_predict(self.G, testingDf, vec, model)[0]
+            vec, model, features = self.predicate2model[predId]
+            return predpath_predict(self.G, testingDf, vec, model, features)[0]
         elif self.method == 'pra': # PRA
             testingDf = self._createTestingDataFrame(subId, predId, objId)
             features, model = self.predicate2model[predId]

@@ -128,6 +128,9 @@ def train_model(G, triples, use_interpretable_features=False, cv=10):
 			select_pos_features.add(feature)
 		if feature in neg_features:
 			select_neg_features.add(feature)
+        select_features = []
+        select_features.extend(select_pos_features)
+        select_features.extend(select_neg_features)
 	print 'D: +:{}, -:{}, tot:{}'.format(
 		len(select_pos_features), len(select_neg_features), X_select.shape[1]
 	)
@@ -164,10 +167,10 @@ def train_model(G, triples, use_interpretable_features=False, cv=10):
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
 
-	return vec, model
+	return vec, model, select_features
 
 
-def predict(G, triples, vec, model):
+def predict(G, triples, vec, model, features):
 	"""
 	Predicts unseen triples using previously built PredPath (PP) model.
 	
@@ -196,9 +199,19 @@ def predict(G, triples, vec, model):
 	# Path extraction
 	print '=> Path extraction.. (this can take a while)'
 	t1 = time()
-	features, pos_features, neg_features, measurements = extract_paths(G, triples, y)
-	print 'P: +:{}, -:{}, unique tot:{}'.format(len(pos_features), len(neg_features), len(features))
-	X = vec.fit_transform(measurements)
+	features_extracted, pos_features, neg_features, measurements = extract_paths(G, triples, y)
+	print 'P: +:{}, -:{}, unique tot:{}'.format(len(pos_features), len(neg_features), len(features_extracted))
+        newDict = dict()
+        for feature in features:
+            try:
+                newDict[feature] = measurements[0][feature]
+            except KeyError:
+                newDict[feature] = 0
+        newList = [newDict]
+        print("NewDict: \n{}".format(newDict))
+
+
+	X = vec.fit_transform(newList)
         # TODO: Error occurs in prediction, does not find enough paths, needs at least 100
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
