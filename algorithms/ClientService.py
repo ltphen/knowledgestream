@@ -39,6 +39,7 @@ class ClientService:
                 self.client.send(Message(type="error", content="Encoding Error").serialize())
                 continue
             except ValueError as ex:
+                print(ex) # TODO: remove
                 self.client.send(Message(type="error", content="Value Error").serialize())
                 continue
             except Exception as ex:

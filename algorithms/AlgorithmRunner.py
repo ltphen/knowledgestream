@@ -4,7 +4,7 @@ from algorithms.relklinker.rel_closure import relational_closure as relclosure
 from algorithms.klinker.closure import closure
 
 # STATE-OF-THE-ART ALGORITHMS
-from algorithms.predpath.predpath_mining import train_model as predpath_train_model
+from algorithms.predpath.predpath_mining import train as predpath_train
 from algorithms.predpath.predpath_mining import predict as predpath_predict
 
 from algorithms.pra.pra_mining import train_model as pra_train_model
@@ -89,7 +89,8 @@ class AlgorithmRunner:
             return scores[0]
         elif self.method == 'predpath': # PREDPATH
             testingDf = self._createTestingDataFrame(subId, predId, objId)
-            return predpath_predict(self.G, testingDf, self.vec, self.model)[0]
+            vec, model = self.predicate2model[predId]
+            return predpath_predict(self.G, testingDf, vec, model)[0]
         elif self.method == 'pra': # PRA
             testingDf = self._createTestingDataFrame(subId, predId, objId)
             return pra_predict(self.G, self.features, self.model, testingDf)[0]
@@ -106,7 +107,7 @@ class AlgorithmRunner:
         trainingDf = self._createTrainingDataFrame()
 
         if self.method == 'predpath': # PREDPATH
-            self.vec, self.model = predpath_train_model(self.trainingGraph, trainingDf)
+            self.predicate2model = predpath_train(self.trainingGraph, self.trainingData)
         elif self.method == 'pra': # PRA
             self.features, self.model = pra_train_model(self.trainingGraph, trainingDf)
 
