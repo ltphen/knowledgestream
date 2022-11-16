@@ -201,18 +201,23 @@ def predict(G, triples, vec, model, features):
 	t1 = time()
 	features_extracted, pos_features, neg_features, measurements = extract_paths(G, triples, y)
 	print 'P: +:{}, -:{}, unique tot:{}'.format(len(pos_features), len(neg_features), len(features_extracted))
-        newDict = dict()
+
+        # Path extraction finds all paths that might be relevant for the triple.
+        # The regression model was trained with 100 features.
+        # For the prediction, it is only relevant, which of those features (paths between subject and object) are present.
+        # Therefore, iterate over relevant features, and see if they are present for this triple.
+        featuresPresent = dict()
+        count = 0
         for feature in features:
             try:
-                newDict[feature] = measurements[0][feature]
+                featuresPresent[feature] = measurements[0][feature]
+                count += 1
             except KeyError:
-                newDict[feature] = 0
-        newList = [newDict]
-        print("NewDict: \n{}".format(newDict))
-
+                featuresPresent[feature] = 0
+        newList = [featuresPresent]
+        print("{} features present.".format(count))
 
 	X = vec.fit_transform(newList)
-        # TODO: Error occurs in prediction, does not find enough paths, needs at least 100
 	pred = model['clf'].predict(X) # array
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
