@@ -97,6 +97,9 @@ def train_model(G, triples, use_interpretable_features=False, cv=10):
 	y = triples['class'] # ground truth
 	triples = triples[['sid', 'pid', 'oid']].to_dict(orient='records')
 
+        # Create a graph backup
+        csrBackup = G.csr.copy()
+
 	# Remove all edges in G corresponding to predicate p.
 	pid = triples[0]['pid']
 	print '=> Removing predicate {} from KG.'.format(pid)
@@ -166,6 +169,9 @@ def train_model(G, triples, use_interpretable_features=False, cv=10):
 	print '#Features: {}, best-AUROC: {:.5f}'.format(X_select.shape[1], model['best_score'])
 	print 'Time taken: {:.2f}s'.format(time() - t1)
 	print ''
+
+        # Restore G
+        G.csr = csrBackup
 
 	return vec, model, select_features
 

@@ -59,10 +59,9 @@ measure_map = {
 
 class AlgorithmRunner:
 
-    def __init__(self, method, G, trainingGraph, internalId, relsim=None):
+    def __init__(self, method, G, internalId, relsim=None):
         self.method = method
         self.G = G
-        self.trainingGraph = trainingGraph
         self.relsim = relsim
         self.internalId = internalId
         self.trainingData = []
@@ -106,9 +105,9 @@ class AlgorithmRunner:
 
     def train(self):
         if self.method == 'predpath': # PREDPATH
-            self.predicate2model = predpath_train(self.trainingGraph, self.trainingData)
+            self.predicate2model = predpath_train(self.G, self.trainingData)
         elif self.method == 'pra': # PRA
-            self.predicate2model = pra_train(self.trainingGraph, self.trainingData)
+            self.predicate2model = pra_train(self.G, self.trainingData)
 
     def getId(self, element):
         try:

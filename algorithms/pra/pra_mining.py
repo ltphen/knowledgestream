@@ -40,7 +40,6 @@ def train(graph, assertionsList):
     # predicate2model[predicate] = (features, model)
     counter = 0
     for predicate in groupedTrainingData.keys():
-        # TODO: graph has to be coppied, since it is modified during training
         predicate2model[predicate] = train_model(graph, _createTrainingDataFrame(groupedTrainingData[predicate]))
         counter += 1
         print("Trained model for {} out of {} predicates".format(counter, len(groupedTrainingData.keys())))
@@ -91,6 +90,9 @@ def train_model(G, triples, maxfeatures=100, cv=10):
 	y = triples['class'] # ground truth
 	triples = triples[['sid', 'pid', 'oid']].astype(np.int).to_dict(orient='records')
 
+        # Create graph backup
+        csrBackup = G.csr.copy()
+
 	# Remove all edges in G corresponding to predicate p.
 	pid = triples[0]['pid']
 	print '=> Removing predicate {} from KG.'.format(pid)
@@ -131,6 +133,7 @@ def train_model(G, triples, maxfeatures=100, cv=10):
 	print ''
 	
 	# weights = model['clf'].named_steps['clf'].coef_
+        G.csr = csrBackup
 	return features, model
 
 

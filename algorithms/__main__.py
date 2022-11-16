@@ -110,9 +110,6 @@ def main(args=None):
     shape = load_shape()
     print(shape)
     G = Graph.reconstruct(PATH, shape, sym=True) # undirected
-    trainingGraph = None
-    if (args.method in ["predpath", "pra"]):
-        trainingGraph = Graph.reconstruct(PATH, shape, sym=True)
     assert np.all(G.csr.indices >= 0)
 
     # relational similarity
@@ -137,7 +134,7 @@ def main(args=None):
             log.info('Waiting for connection on port {}'.format(args.port))
             client, conn = s.accept()
             log.info('Accepted connection')
-            clientService = ClientService(client, args.method, G, trainingGraph, relsim, internalId)
+            clientService = ClientService(client, args.method, G, relsim, internalId)
             clientService.serve()
     except KeyboardInterrupt:
         s.close()
