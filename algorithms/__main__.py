@@ -21,26 +21,24 @@ from algorithms.mincostflow.ssp import disable_logging
 # KG - DBpedia
 HOME = abspath(expanduser('/knowledgestream/data/'))
 if not exists(HOME):
-    print 'Data directory not found: %s' % HOME
-    print 'Download data per instructions on:'
-    print '\thttps://github.com/shiralkarprashant/knowledgestream#data'
-    print 'and enter the directory path below.'
+    print('Knowledgegraph not found: %s' % HOME)
+    print('Download Knowledgegraph per instructions on:')
+    print('http://github.com/saschaTrippel/knowledgestream#knowledgegraph')
+    print('and enter the directory path below.')
     data_dir = raw_input('\nPlease enter data directory path: ')
     if data_dir != '':
-	data_dir = abspath(expanduser(data_dir))
+        data_dir = abspath(expanduser(data_dir))
     if not os.path.isdir(data_dir):
-	raise Exception('Entered path "%s" not a directory.' % data_dir)
+        raise Exception('Entered path "%s" not a directory.' % data_dir)
     if not exists(data_dir):
-	raise Exception('Directory does not exist: %s' % data_dir)
+        raise Exception('Directory does not exist: %s' % data_dir)
     HOME = data_dir
-    # raise Exception('Please set HOME to data directory in algorithms/__main__.py')
 PATH = join(HOME, 'kg/_undir/')
 assert exists(PATH)
 SHAPE = "data/kg/shape.txt"
 
 # relational similarity using TF-IDF representation and cosine similarity
 RELSIMPATH = join(HOME, 'relsim/predicate-similarity.npy') 
-# assert exists(RELSIMPATH)
 
 internalId = dict()
 
@@ -53,8 +51,6 @@ def parseArguments():
 	parser.add_argument('-m', type=str, required=True,
 			dest='method', help='Method to use: stream, relklinker, klinker, \
 			predpath, pra, katz, pathent, simrank, adamic_adar, jaccard, degree_product.')
-	parser.add_argument('-d', type=str, required=False, dest='dataset', help='Dataset to test on.')
-	parser.add_argument('-o', type=str, required=False, dest='outdir', help='Path to the output directory.')
         parser.add_argument('-p', type=int, required=False, default=4444, dest='port', help='Specify on which port shall be listened.')
         return parser.parse_args()
 
@@ -143,16 +139,15 @@ if __name__ == '__main__':
     python setup.py develop OR python setup.py install
 
     # Knowledge Stream:
-    kstream -m 'stream' -d ./datasets/synthetic/Player_vs_Team_NBA.csv -o ./output/
-    kstream -m 'stream' -d ./datasets/sample.csv -o ./output/
+    kstream -m stream -p 4444
 
     # Relational Knowledge Linker (KL-REL)
-    kstream -m 'relklinker' -d ./datasets/sample.csv -o ./output/
+    kstream -m 'relklinker' -p 4444
 
     # PredPath
-    kstream -m 'predpath' -d ./datasets/sample.csv -o ./output/	
+    kstream -m 'predpath' -p 4444
 
     # PRA
-    kstream -m 'pra' -d ./datasets/sample.csv -o ./output/	
+    kstream -m 'pra' -p 4444
     """
     main()
