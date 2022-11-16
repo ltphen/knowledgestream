@@ -55,7 +55,6 @@ def parseArguments():
 			predpath, pra, katz, pathent, simrank, adamic_adar, jaccard, degree_product.')
 	parser.add_argument('-d', type=str, required=False, dest='dataset', help='Dataset to test on.')
 	parser.add_argument('-o', type=str, required=False, dest='outdir', help='Path to the output directory.')
-        parser.add_argument('-b', type=bool, required=False, default=False, dest='batch', help='Run in batch mode and read input from file.')
         parser.add_argument('-p', type=int, required=False, default=4444, dest='port', help='Specify on which port shall be listened.')
         return parser.parse_args()
 
@@ -117,11 +116,6 @@ def main(args=None):
         relsim = np.load(RELSIMPATH)
     else:
         relsim = None
-
-    if (args.batch):
-        batch(args, G, relsim)
-        print('\nDone!\n')
-        return
 
     # Read internal IDs from file
     log.info('Caching internal IDs')
