@@ -31,6 +31,9 @@ from algorithms.predpath.pathenum import get_paths as c_get_paths
 def train(graph, assertionsList):
     """
     Train a model for each predicate that is in the data set.
+
+    A regression model is trained with paths as features that support a certain predicate.
+    Therefore, a model has to be created for each predicate that is in the dataset.
     """
     groupedTrainingData = dict()
     for assertion in assertionsList:
@@ -39,10 +42,9 @@ def train(graph, assertionsList):
         groupedTrainingData[assertion.predicateId].append(assertion)
 
     predicate2model = dict()
-    # predicate2model[predicate] = (vec, model)
+    # predicate2model[predicate] = (vec, model, features)
     counter = 0
     for predicate in groupedTrainingData.keys():
-        # TODO: graph has to be coppied, since it is modified during training
         predicate2model[predicate] = train_model(graph, _createTrainingDataFrame(groupedTrainingData[predicate]))
         counter += 1
         print("Trained model for {} out of {} predicates".format(counter, len(groupedTrainingData.keys())))

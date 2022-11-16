@@ -29,6 +29,9 @@ from algorithms.pra.pra_helper \
 def train(graph, assertionsList):
     """
     Train a model for each predicate that is in the data set.
+
+    A regression model is trained with paths as features that support a certain predicate.
+    Therefore, a model has to be created for each predicate that is in the dataset.
     """
     groupedTrainingData = dict()
     for assertion in assertionsList:
