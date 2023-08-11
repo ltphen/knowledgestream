@@ -66,7 +66,7 @@ cdef _compute_cooccurrence(
 		cooc_mat += u
 		itr += 1
 		if itr == progress[ptr]:
-			print '{} complete: {:.3f}s.'.format(progress[ptr], time() - t1)
+			# print '{} complete: {:.3f}s.'.format(progress[ptr], time() - t1)
 			ptr += 1
 			t1 = time()
 	return cooc_mat
