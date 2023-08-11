@@ -199,7 +199,7 @@ cpdef construct_feature_matrix(G, list features, list triples, int maxwalks=1000
 		cvec = _construct_feature_matrix(
 			indices, indptr, sids, oids, ff, maxwalks, n, m, N
 		)
-	print 'Time taken at C level: {:.3f}s'.format(time() - t1)
+	# print 'Time taken at C level: {:.3f}s'.format(time() - t1)
 	vec = np.asarray(cvec)
 	vec = vec / deno
 	mat = vec.reshape((n, m))
