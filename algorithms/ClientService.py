@@ -42,6 +42,7 @@ class ClientService:
                 self.client.send(Message(type="error", content="Value Error").serialize())
                 continue
             except Exception as ex:
+                print("This is a real problem", str(ex))
                 raise ex
     
     def parseRequest(self, assertionString):
